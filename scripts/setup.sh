@@ -638,6 +638,26 @@ print_gpu_vendor_choices() {
     detail "  - generic : fallback when vendor-specific handling is not wanted"
 }
 
+print_browser_choices() {
+    detail "Browser launcher choices:"
+    detail "  - firefox : keeps the repository default"
+    detail "  - chrome  : uses Google Chrome as the launcher target"
+}
+
+print_locale_help() {
+    detail "Locale format examples:"
+    detail "  - en_US.UTF-8"
+    detail "  - ja_JP.UTF-8"
+    detail "  - zh_CN.UTF-8"
+}
+
+print_timezone_help() {
+    detail "Time zone format examples:"
+    detail "  - Asia/Tokyo"
+    detail "  - Europe/Berlin"
+    detail "  - America/Los_Angeles"
+}
+
 print_font_preferences_help() {
     detail "Custom font preferences only toggle the dedicated font module."
     detail "You are expected to fine-tune the actual font families later."
@@ -894,6 +914,7 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
     read -p "Enter your full name [$DEFAULT_FULLNAME]: " fullname
     fullname=${fullname:-$DEFAULT_FULLNAME}
 
+    print_locale_help
     read -p "Enter your system locale [$DEFAULT_LOCALE]: " locale_value
     locale_value=${locale_value:-$DEFAULT_LOCALE}
 
@@ -901,6 +922,7 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
         error "Invalid locale format: $locale_value"
     fi
 
+    print_timezone_help
     read -p "Enter your location/time zone [$DEFAULT_TIMEZONE]: " timezone_value
     timezone_value=${timezone_value:-$DEFAULT_TIMEZONE}
 
@@ -1052,6 +1074,7 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
         fi
     fi
 
+    print_browser_choices
     read -p "Select your default browser launcher [firefox]: " browser_choice
     browser_choice=${browser_choice:-firefox}
     browser_choice=$(printf '%s' "$browser_choice" | tr '[:upper:]' '[:lower:]')
