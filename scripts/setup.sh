@@ -885,7 +885,7 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
         AUTO_MODE=true
         success "Proceeding with automatic setup..."
     else
-        read -p "Enable automatic setup? (Skips name/locale/timezone/hostname/Git/GPU/fingerprint/dual-boot prompts, but still asks about display, profile, and optional packages) [y/N] " auto_confirm
+        read -p "Enable automatic setup? (Skips name/locale/timezone/hostname/Git/GPU/fingerprint/dual-boot prompts, but still asks about browser, display, profile, and optional packages) [y/N] " auto_confirm
         if [[ "$auto_confirm" =~ ^[yY]$ ]]; then
             AUTO_MODE=true
             info "Automatic mode enabled."
@@ -1245,6 +1245,22 @@ else
         fi
     elif [[ "$package_profile" == "$USER_PACKAGE_PROFILE" ]]; then
         apply_user_profile_defaults
+    fi
+
+    if is_interactive; then
+        print_browser_choices
+        read -p "Select your default browser launcher [$DEFAULT_BROWSER]: " browser_choice
+        browser_choice=${browser_choice:-$DEFAULT_BROWSER}
+        browser_choice=$(printf '%s' "$browser_choice" | tr '[:upper:]' '[:lower:]')
+
+        if ! validate_browser_choice "$browser_choice"; then
+            error "Invalid browser choice: $browser_choice"
+        fi
+
+        if [[ "$browser_choice" == "chrome" && "$enable_google_chrome" != "true" ]]; then
+            warn "Chrome launcher selected. Enabling Google Chrome package."
+            enable_google_chrome="true"
+        fi
     fi
 fi
 
