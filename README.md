@@ -11,6 +11,7 @@
 
 [![NixOS](https://img.shields.io/badge/NixOS-unstable-5277C3?logo=nixos&logoColor=white)](https://nixos.org)
 [![Home Manager](https://img.shields.io/badge/Home_Manager-enabled-3FB950?logo=nixos&logoColor=white)](https://github.com/nix-community/home-manager)
+[![CI](https://github.com/W4T4r/MD4N/actions/workflows/ci.yml/badge.svg)](https://github.com/W4T4r/MD4N/actions/workflows/ci.yml)
 [![Wayland](https://img.shields.io/badge/Session-Wayland-00A3FF?logo=wayland&logoColor=white)](https://wayland.freedesktop.org)
 [![WM](https://img.shields.io/badge/WM-Niri-7C4DFF)](https://github.com/YaLTeR/niri)
 [![Theme](https://img.shields.io/badge/Theme-Catppuccin-F5E0DC?logo=catppuccin&logoColor=white)](https://github.com/catppuccin/catppuccin)
