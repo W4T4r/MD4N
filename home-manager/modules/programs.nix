@@ -6,7 +6,30 @@
 }: {
   programs = {
     home-manager.enable = true;
-    fish.enable = true;
+    fish = {
+      enable = true;
+      shellInit = ''
+        set -gx PATH ${user.dotroot}/scripts $HOME/.local/bin $PATH
+        set -gx NIXPKGS_ALLOW_UNFREE 1
+      '';
+      interactiveShellInit = ''
+        eval (${pkgs.direnv}/bin/direnv hook fish)
+
+        if test "$TERM" != "dumb"
+            starship init fish | source
+            fastfetch
+        end
+
+        set -l local_conf_dir "$HOME/.config/fish/conf.d/local"
+        if test -d "$local_conf_dir"
+            for file in $local_conf_dir/*.fish
+                if test -f "$file"
+                    source "$file"
+                end
+            end
+        end
+      '';
+    };
     gitui.enable = true;
     bcompare5.enable = user.enableBcompare5 or false;
 

@@ -5,7 +5,7 @@
 }: let
   virtualizationEnabled = (user.enableVirtualization or true) && (user.packageProfile or "full") != "minimal";
 in {
-  # Author's kitchen-sink profile: enable the whole desktop/tooling set.
+  # Personal kitchen-sink profile: enable the whole desktop/tooling set.
   home.packages = with pkgs;
     [
       fastfetch

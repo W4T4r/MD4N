@@ -80,7 +80,6 @@ in {
 
       "btop".source = ../config/btop;
       "fcitx5".source = ../config/fcitx5;
-      "fish/conf.d/md4n.fish".source = ../config/fish/conf.d/md4n.fish;
       "fish/functions".source = ../config/fish/functions;
       "gtk-3.0".source = ../config/gtk-3.0;
       "gtk-4.0".source = ../config/gtk-4.0;

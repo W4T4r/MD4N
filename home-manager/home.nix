@@ -10,9 +10,10 @@
 # ██║ ╚═╝ ██║██████╔╝     ██║██║ ╚████║
 # ╚═╝     ╚═╝╚═════╝      ╚═╝╚═╝  ╚═══╝
 let
+  userPackageProfile = "w4t4r";
   packageProfile = user.packageProfile or "full";
   packageModule =
-    if builtins.elem packageProfile ["minimal" "full" "custom" "max"]
+    if builtins.elem packageProfile ["minimal" "full" "custom" userPackageProfile]
     then ./modules/packages + "/${packageProfile}.nix"
     else throw "Unsupported package profile '${packageProfile}' in user.nix";
 in {

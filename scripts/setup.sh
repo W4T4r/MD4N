@@ -69,6 +69,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 USER_NIX="${ROOT_DIR}/user.nix"
 USER_LOCAL_NIX="${ROOT_DIR}/user.local.nix"
+USER_PACKAGE_PROFILE="w4t4r"
 FORGE_SCRIPT="${ROOT_DIR}/scripts/forge.sh"
 
 detect_locale() {
@@ -295,7 +296,7 @@ validate_git_email() {
 }
 
 validate_package_profile() {
-    [[ "$1" == "minimal" || "$1" == "full" || "$1" == "custom" || "$1" == "max" ]]
+    [[ "$1" == "minimal" || "$1" == "full" || "$1" == "custom" || "$1" == "$USER_PACKAGE_PROFILE" ]]
 }
 
 validate_gpu_vendor() {
@@ -627,7 +628,7 @@ print_package_profile_choices() {
     detail "  - minimal : lighter package set"
     detail "  - full    : default workstation profile"
     detail "  - custom  : full base intended for local tailoring"
-    detail "  - max     : author's all-in profile, enables nearly everything"
+    detail "  - ${USER_PACKAGE_PROFILE} : personal all-in profile, enables nearly everything"
 }
 
 print_gpu_vendor_choices() {
@@ -671,18 +672,18 @@ print_virtualization_help() {
     detail "If disabled, virtualization modules and helper packages stay out of the system."
 }
 
-confirm_max_profile() {
-    warn "The 'max' profile is the repository author's personal all-in setup."
+confirm_user_profile() {
+    warn "The '${USER_PACKAGE_PROFILE}' profile is the personal all-in setup."
     warn "It enables a large number of packages and settings, including many tools you may never use."
-    read -p "Do you really want to apply the 'max' profile and skip the remaining optional prompts? [y/N] " confirm_max
+    read -p "Do you really want to apply the '${USER_PACKAGE_PROFILE}' profile and skip the remaining optional prompts? [y/N] " confirm_max
 
     if [[ ! "$confirm_max" =~ ^[yY]$ ]]; then
-        info "Max profile cancelled."
+        info "User profile cancelled."
         exit 0
     fi
 }
 
-apply_max_profile_defaults() {
+apply_user_profile_defaults() {
     enable_custom_fonts="true"
     enable_virtualization="true"
     enable_bcompare5="true"
@@ -959,9 +960,9 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
         error "Invalid package profile: $package_profile"
     fi
 
-    if [[ "$package_profile" == "max" ]]; then
-        confirm_max_profile
-        apply_max_profile_defaults
+    if [[ "$package_profile" == "$USER_PACKAGE_PROFILE" ]]; then
+        confirm_user_profile
+        apply_user_profile_defaults
     else
         print_font_preferences_help
         enable_custom_fonts=$(prompt_bool_with_default "Enable W4T4r personal font preferences?" "false")
@@ -1137,8 +1138,8 @@ else
             error "Invalid package profile: $package_profile"
         fi
 
-        if [[ "$package_profile" == "max" ]]; then
-            confirm_max_profile
+        if [[ "$package_profile" == "$USER_PACKAGE_PROFILE" ]]; then
+            confirm_user_profile
         fi
     else
         package_profile="full"
@@ -1198,7 +1199,7 @@ else
         enable_global_protect="false"
         enable_ollama="false"
         enable_steam="false"
-    elif [[ "$AUTO_MODE" == "true" && "$package_profile" != "max" ]]; then
+    elif [[ "$AUTO_MODE" == "true" && "$package_profile" != "$USER_PACKAGE_PROFILE" ]]; then
         print_virtualization_help
         enable_virtualization=$(prompt_bool_with_default "Enable virtualization environment?" "true")
 
@@ -1221,8 +1222,8 @@ else
         elif [[ "$package_profile" == "custom" ]]; then
             prompt_custom_profile_packages
         fi
-    elif [[ "$package_profile" == "max" ]]; then
-        apply_max_profile_defaults
+    elif [[ "$package_profile" == "$USER_PACKAGE_PROFILE" ]]; then
+        apply_user_profile_defaults
     fi
 fi
 

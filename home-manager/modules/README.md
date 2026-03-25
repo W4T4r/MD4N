@@ -14,7 +14,7 @@ These modules are the main composition layer for the user environment and are in
 - `fonts.nix`
   Optional W4T4r personal font defaults enabled only when the generated local settings opt into that personal font module.
 - `packages/`
-  Profile-specific package lists for `minimal`, `full`, `custom`, and `max`.
+  Profile-specific package lists for `minimal`, `full`, `custom`, and `w4t4r`.
 
 ## Design Notes
 
