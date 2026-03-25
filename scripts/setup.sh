@@ -1,0 +1,555 @@
+#!/usr/bin/env bash
+
+# setup.sh - Interactive MD4N setup script
+
+set -euo pipefail
+
+# --- Colors ---
+BLUE='\033[0;34m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+CYAN='\033[0;36m'
+GRAY='\033[0;90m'
+BOLD='\033[1m'
+DIM='\033[2m'
+NC='\033[0m' # No Color
+
+# --- Helper Functions ---
+info() { echo -e "${BLUE}[INFO]${NC} $1"; }
+success() { echo -e "${GREEN}[SUCCESS]${NC} $1"; }
+warn() { echo -e "${YELLOW}[WARN]${NC} $1"; }
+error() { echo -e "${RED}[ERROR]${NC} $1"; exit 1; }
+step() { echo -e "\n${CYAN}==>${NC} ${BOLD}$1${NC}"; }
+detail() { echo -e "   ${DIM:-}${1}${NC}"; }
+
+rule() {
+    printf '%b\n' "${GRAY}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+}
+
+summary_row() {
+    printf '%b %-11s%b %s\n' "${GRAY}" "$1" "${NC}" "$2"
+}
+
+print_logo() {
+    printf '%b\n' \
+        "${BLUE}${BOLD}███╗   ███╗██████╗ ██╗  ██╗███╗   ██╗${NC}" \
+        "${BLUE}${BOLD}████╗ ████║██╔══██╗██║  ██║████╗  ██║${NC}" \
+        "${BLUE}${BOLD}██╔████╔██║██║  ██║███████║██╔██╗ ██║${NC}" \
+        "${BLUE}${BOLD}██║╚██╔╝██║██║  ██║╚════██║██║╚██╗██║${NC}" \
+        "${BLUE}${BOLD}██║ ╚═╝ ██║██████╔╝     ██║██║ ╚████║${NC}" \
+        "${BLUE}${BOLD}╚═╝     ╚═╝╚═════╝      ╚═╝╚═╝  ╚═══╝${NC}"
+}
+
+print_banner() {
+    echo
+    if [[ "${MD4N_CHAINED:-0}" != "1" ]]; then
+        print_logo
+    fi
+    rule
+    printf '%b%s%b\n' "${CYAN}${BOLD}" "                  SETUP CONSOLE                  " "${NC}"
+    rule
+    summary_row "Repository" "${ROOT_DIR}"
+    summary_row "Previous" "install.sh -> bootstrap.sh"
+    summary_row "Current" "setup.sh"
+    summary_row "Next" "forge.sh (optional)"
+    summary_row "Flow" "install.sh -> bootstrap.sh -> setup.sh"
+    summary_row "user.nix" "${USER_NIX}"
+    summary_row "local.nix" "${USER_LOCAL_NIX}"
+    summary_row "Fish env" "${FISH_ENV_FILE}"
+    rule
+}
+
+# Check if running in a terminal
+is_interactive() {
+    [[ -t 0 ]]
+}
+
+# --- Initialization & Pre-flight Checks ---
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+USER_NIX="${ROOT_DIR}/user.nix"
+USER_LOCAL_NIX="${ROOT_DIR}/user.local.nix"
+FORGE_SCRIPT="${ROOT_DIR}/scripts/forge.sh"
+FISH_ENV_FILE="${ROOT_DIR}/home-manager/config/fish/conf.d/md4n-env.fish"
+
+detect_locale() {
+    local detected=""
+
+    if command -v locale >/dev/null 2>&1; then
+        detected=$(locale 2>/dev/null | awk -F= '/^LANG=/{gsub(/"/, "", $2); print $2; exit}')
+    fi
+
+    if [[ -z "$detected" && -n "${LANG:-}" ]]; then
+        detected=${LANG}
+    fi
+
+    printf '%s\n' "${detected:-en_US.UTF-8}"
+}
+
+detect_timezone() {
+    local detected=""
+
+    if command -v timedatectl >/dev/null 2>&1; then
+        detected=$(timedatectl show --property=Timezone --value 2>/dev/null || true)
+    fi
+
+    if [[ -z "$detected" && -f /etc/timezone ]]; then
+        detected=$(head -n 1 /etc/timezone 2>/dev/null || true)
+    fi
+
+    if [[ -z "$detected" && -L /etc/localtime ]]; then
+        detected=$(readlink /etc/localtime 2>/dev/null | sed 's#^.*/zoneinfo/##')
+    fi
+
+    printf '%s\n' "${detected:-Asia/Tokyo}"
+}
+
+detect_hostname() {
+    local detected=""
+
+    if command -v hostnamectl >/dev/null 2>&1; then
+        detected=$(hostnamectl --static 2>/dev/null || true)
+    fi
+
+    if [[ -z "$detected" && -f /etc/hostname ]]; then
+        detected=$(head -n 1 /etc/hostname 2>/dev/null || true)
+    fi
+
+    if [[ -z "$detected" && "$(command -v hostname || true)" ]]; then
+        detected=$(hostname 2>/dev/null || true)
+    fi
+
+    printf '%s\n' "${detected:-nixos}"
+}
+
+detect_git_config() {
+    local key=$1
+
+    if ! command -v git >/dev/null 2>&1; then
+        return 0
+    fi
+
+    git config --global --get "$key" 2>/dev/null || true
+}
+
+detect_gpu_vendor() {
+    local detected=""
+    local lspci_output=""
+
+    if command -v lspci >/dev/null 2>&1; then
+        lspci_output=$(lspci 2>/dev/null || true)
+        if printf '%s\n' "$lspci_output" | grep -Eiq 'vga|3d|display'; then
+            if printf '%s\n' "$lspci_output" | grep -Eiq 'amd|advanced micro devices|radeon'; then
+                detected="amd"
+            elif printf '%s\n' "$lspci_output" | grep -Eiq 'nvidia'; then
+                detected="nvidia"
+            elif printf '%s\n' "$lspci_output" | grep -Eiq 'intel'; then
+                detected="intel"
+            fi
+        fi
+    fi
+
+    printf '%s\n' "${detected:-generic}"
+}
+
+validate_locale() {
+    [[ "$1" =~ ^[A-Za-z0-9_@.-]+$ ]]
+}
+
+validate_timezone() {
+    [[ "$1" =~ ^[A-Za-z0-9_+\-]+(/[A-Za-z0-9_+\-]+)+$ ]]
+}
+
+validate_hostname() {
+    [[ "$1" =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$ ]]
+}
+
+validate_git_email() {
+    [[ -z "$1" || "$1" =~ ^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$ ]]
+}
+
+validate_package_profile() {
+    [[ "$1" == "minimal" || "$1" == "full" || "$1" == "custom" ]]
+}
+
+validate_gpu_vendor() {
+    [[ "$1" == "amd" || "$1" == "nvidia" || "$1" == "intel" || "$1" == "generic" ]]
+}
+
+validate_bool_string() {
+    [[ "$1" == "true" || "$1" == "false" ]]
+}
+
+escape_nix_string() {
+    local value=$1
+    value=${value//\\/\\\\}
+    value=${value//\"/\\\"}
+    printf '%s' "$value"
+}
+
+render_nix_bool() {
+    if [[ "$1" == "true" ]]; then
+        printf 'true'
+    else
+        printf 'false'
+    fi
+}
+
+render_fish_env() {
+    local dotroot=$1
+
+cat <<EOF
+# Auto-generated by scripts/setup.sh
+set -gx MD4N_ROOT "${dotroot}"
+set -gx MD4N_SCRIPTS "\$MD4N_ROOT/scripts"
+if not contains "\$MD4N_SCRIPTS" \$PATH
+    fish_add_path --append "\$MD4N_SCRIPTS"
+end
+EOF
+}
+
+write_fish_env() {
+    local dotroot=$1
+    local new_content
+    local action="overwrite"
+
+    mkdir -p "$(dirname "$FISH_ENV_FILE")"
+    new_content=$(render_fish_env "$dotroot")
+
+    if [[ -f "$FISH_ENV_FILE" ]]; then
+        if cmp -s "$FISH_ENV_FILE" <(printf '%s\n' "$new_content"); then
+            info "Fish environment file is already up to date."
+            return 0
+        fi
+
+        if is_interactive; then
+            echo -e "${YELLOW}Existing Fish environment file found:${NC} ${FISH_ENV_FILE}"
+            read -r -p "Overwrite it with the new MD4N environment settings, or keep the current file? [overwrite/keep] " action
+            action=${action:-overwrite}
+        else
+            action="keep"
+        fi
+
+        case "$action" in
+            overwrite)
+                ;;
+            keep)
+                warn "Keeping existing Fish environment file unchanged."
+                return 0
+                ;;
+            *)
+                warn "Unknown choice: ${action}. Keeping existing Fish environment file unchanged."
+                return 0
+                ;;
+        esac
+    fi
+
+    printf '%s\n' "$new_content" > "$FISH_ENV_FILE"
+}
+
+print_banner
+info "Preparing MD4N configuration..."
+
+# --- 0. Mode Selection ---
+AUTO_MODE=false
+FIRST_TIME=false
+[[ -f "$USER_LOCAL_NIX" ]] || FIRST_TIME=true
+
+if is_interactive; then
+    echo
+    if [[ "$FIRST_TIME" == "true" ]]; then
+        warn "This is your first time running the setup."
+        info "The automatic setup is mandatory for the initial configuration to ensure a correct baseline."
+        read -p "Do you want to proceed with the automatic setup? [Y/n] " auto_confirm
+        if [[ ! "$auto_confirm" =~ ^[yY]?$ ]]; then
+            error "Setup cancelled. Automatic setup is required for the first run."
+        fi
+        AUTO_MODE=true
+        success "Proceeding with automatic setup..."
+    else
+        read -p "Would you like to proceed with the automatic setup? (Skips most prompts) [y/N] " auto_confirm
+        if [[ "$auto_confirm" =~ ^[yY]$ ]]; then
+            AUTO_MODE=true
+            info "Automatic mode enabled."
+        fi
+    fi
+    echo
+fi
+
+# 1. Dependency Check
+if ! command -v git &> /dev/null; then
+    warn "git is not installed. Some features might not work."
+fi
+
+if [[ ! -f "${ROOT_DIR}/flake.nix" ]]; then
+    error "Could not find flake.nix in ${ROOT_DIR}. Please run this script from the repository root."
+fi
+
+# 2. Existing Configuration Check (The Confirmation Request)
+if [[ -f "$USER_LOCAL_NIX" ]] && is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
+    echo -e "${YELLOW}Existing user.local.nix found.${NC}"
+    read -p "Do you really want to run the setup again? This will overwrite your settings. [y/N] " confirm
+    if [[ ! "$confirm" =~ ^[yY]$ ]]; then
+        info "Setup cancelled by user."
+        exit 0
+    fi
+fi
+
+# --- 1. User Configuration (user.local.nix) ---
+step "Collecting user configuration"
+
+dotroot="$ROOT_DIR"
+
+if is_interactive; then
+    username=$(whoami)
+    DEFAULT_FULLNAME=$(getent passwd "$username" | cut -d ':' -f 5 | cut -d ',' -f 1 || echo "User")
+    DEFAULT_LOCALE=$(detect_locale)
+    DEFAULT_TIMEZONE=$(detect_timezone)
+    DEFAULT_HOSTNAME=$(detect_hostname)
+    DEFAULT_GIT_NAME=$(detect_git_config user.name)
+    DEFAULT_GIT_EMAIL=$(detect_git_config user.email)
+    DEFAULT_GPU_VENDOR=$(detect_gpu_vendor)
+
+    if [[ -z "$DEFAULT_GIT_NAME" ]]; then
+        DEFAULT_GIT_NAME=$DEFAULT_FULLNAME
+    fi
+
+    info "Detected username: ${GREEN}${username}${NC}"
+
+    read -p "Enter your full name [$DEFAULT_FULLNAME]: " fullname
+    fullname=${fullname:-$DEFAULT_FULLNAME}
+
+    read -p "Enter your system locale [$DEFAULT_LOCALE]: " locale_value
+    locale_value=${locale_value:-$DEFAULT_LOCALE}
+
+    if ! validate_locale "$locale_value"; then
+        error "Invalid locale format: $locale_value"
+    fi
+
+    read -p "Enter your location/time zone [$DEFAULT_TIMEZONE]: " timezone_value
+    timezone_value=${timezone_value:-$DEFAULT_TIMEZONE}
+
+    if ! validate_timezone "$timezone_value"; then
+        error "Invalid time zone format: $timezone_value"
+    fi
+
+    read -p "Enter your hostname [$DEFAULT_HOSTNAME]: " hostname_value
+    hostname_value=${hostname_value:-$DEFAULT_HOSTNAME}
+
+    if ! validate_hostname "$hostname_value"; then
+        error "Invalid hostname format: $hostname_value"
+    fi
+
+    read -p "Enter your Git author name [$DEFAULT_GIT_NAME]: " git_name
+    git_name=${git_name:-$DEFAULT_GIT_NAME}
+
+    read -p "Enter your Git author email [$DEFAULT_GIT_EMAIL]: " git_email
+    git_email=${git_email:-$DEFAULT_GIT_EMAIL}
+
+    if ! validate_git_email "$git_email"; then
+        error "Invalid Git email format: $git_email"
+    fi
+
+    if [[ -z "$git_email" ]]; then
+        warn "Git email is empty. Home Manager will not set programs.git.settings.user.email."
+    fi
+
+    echo "Package profile options: minimal, full, custom"
+    read -p "Select your package profile [full]: " package_profile
+    package_profile=${package_profile:-full}
+
+    if ! validate_package_profile "$package_profile"; then
+        error "Invalid package profile: $package_profile"
+    fi
+
+    read -p "Enable custom font preferences? [y/N] " enable_custom_fonts_confirm
+    if [[ "$enable_custom_fonts_confirm" =~ ^[yY]$ ]]; then
+        enable_custom_fonts="true"
+    else
+        enable_custom_fonts="false"
+    fi
+
+    read -p "Enter your GPU vendor [$DEFAULT_GPU_VENDOR]: " gpu_vendor
+    gpu_vendor=${gpu_vendor:-$DEFAULT_GPU_VENDOR}
+
+    if ! validate_gpu_vendor "$gpu_vendor"; then
+        error "Invalid GPU vendor: $gpu_vendor"
+    fi
+
+    read -p "Enable dual-boot support (GRUB os-prober)? [y/N] " enable_dual_boot_confirm
+    if [[ "$enable_dual_boot_confirm" =~ ^[yY]$ ]]; then
+        enable_dual_boot="true"
+        enable_hibernate="false"
+        info "Dual-boot support enabled. Hibernate is forced off to avoid resume conflicts."
+    else
+        enable_dual_boot="false"
+        read -p "Enable hibernate and hybrid-sleep? [y/N] " enable_hibernate_confirm
+        if [[ "$enable_hibernate_confirm" =~ ^[yY]$ ]]; then
+            enable_hibernate="true"
+        else
+            enable_hibernate="false"
+        fi
+    fi
+
+    echo
+    info "Review your MD4N settings."
+    detail "Username : ${username}"
+    detail "Full name: ${fullname}"
+    detail "Locale   : ${locale_value}"
+    detail "Timezone : ${timezone_value}"
+    detail "Hostname : ${hostname_value}"
+    detail "Git name : ${git_name}"
+    detail "Git email: ${git_email:-<unset>}"
+    detail "Profile  : ${package_profile}"
+    detail "Fonts    : ${enable_custom_fonts}"
+    detail "GPU      : ${gpu_vendor}"
+    detail "Dualboot : ${enable_dual_boot}"
+    detail "Hibernate: ${enable_hibernate}"
+    detail "Dotfiles : ${dotroot}"
+else
+    # Non-interactive defaults
+    username=$(whoami)
+    fullname=$(getent passwd "$username" | cut -d ':' -f 5 | cut -d ',' -f 1 || echo "User")
+    locale_value=$(detect_locale)
+    timezone_value=$(detect_timezone)
+    hostname_value=$(detect_hostname)
+    git_name=$(detect_git_config user.name)
+    git_email=$(detect_git_config user.email)
+
+    if [[ -z "$git_name" ]]; then
+        git_name=$fullname
+    fi
+
+    package_profile="full"
+    enable_custom_fonts="false"
+    gpu_vendor=$(detect_gpu_vendor)
+    enable_dual_boot="false"
+    enable_hibernate="false"
+fi
+
+if ! validate_bool_string "$enable_dual_boot"; then
+    error "Invalid dual-boot flag: $enable_dual_boot"
+fi
+
+if ! validate_bool_string "$enable_hibernate"; then
+    error "Invalid hibernate flag: $enable_hibernate"
+fi
+
+# Backup existing user.local.nix
+if [[ -f "$USER_LOCAL_NIX" ]]; then
+    warn "Creating backup of user.local.nix..."
+    mv "$USER_LOCAL_NIX" "${USER_LOCAL_NIX}.bak"
+    detail "Backup path: ${USER_LOCAL_NIX}.bak"
+fi
+
+info "Generating user.local.nix..."
+cat <<EOF > "$USER_LOCAL_NIX"
+# ███╗   ███╗██████╗ ██╗  ██╗███╗   ██╗
+# ████╗ ████║██╔══██╗██║  ██║████╗  ██║
+# ██╔████╔██║██║  ██║███████║██╔██╗ ██║
+# ██║╚██╔╝██║██║  ██║╚════██║██║╚██╗██║
+# ██║ ╚═╝ ██║██████╔╝     ██║██║ ╚████║
+# ╚═╝     ╚═╝╚═════╝      ╚═╝╚═╝  ╚═══╝
+#
+# user.local.nix - Auto-generated by setup.sh
+
+let
+  name = "$(escape_nix_string "$username")";
+  fullname = "$(escape_nix_string "$fullname")";
+  locale = "$(escape_nix_string "$locale_value")";
+  timezone = "$(escape_nix_string "$timezone_value")";
+  hostname = "$(escape_nix_string "$hostname_value")";
+  gitName = "$(escape_nix_string "$git_name")";
+  gitEmail = "$(escape_nix_string "$git_email")";
+  packageProfile = "$(escape_nix_string "$package_profile")";
+  enableCustomFonts = $(render_nix_bool "$enable_custom_fonts");
+  gpuVendor = "$(escape_nix_string "$gpu_vendor")";
+  enableDualBoot = $(render_nix_bool "$enable_dual_boot");
+  enableHibernate = $(render_nix_bool "$enable_hibernate");
+  home = "/home/\${name}";
+  dotroot = "$(escape_nix_string "$dotroot")";
+  homemanager = "\${dotroot}/home-manager";
+  cfg = "\${homemanager}/config";
+  app = "\${homemanager}/applications";
+in
+{
+  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableCustomFonts gpuVendor enableDualBoot enableHibernate home dotroot homemanager cfg app;
+}
+EOF
+
+success "Created ${USER_LOCAL_NIX}"
+
+step "Writing shell environment"
+detail "Exports MD4N_ROOT and MD4N_SCRIPTS"
+detail "Adds scripts/ to Fish PATH"
+write_fish_env "$dotroot"
+success "Fish environment setup finished for ${FISH_ENV_FILE}"
+
+# --- 2. Hardware Configuration ---
+step "Preparing hardware configuration"
+TARGET_HW_CONFIG="${ROOT_DIR}/nixos/hardware-configuration.nix"
+TARGET_HW_CONFIG_BAK="${TARGET_HW_CONFIG}.bak"
+
+if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
+    read -p "Would you like to generate a new hardware configuration for THIS machine? (Requires sudo) [y/N] " gen_hw
+    if [[ "$gen_hw" =~ ^[yY]$ ]]; then
+        if [[ -e "${TARGET_HW_CONFIG}" || -L "${TARGET_HW_CONFIG}" ]]; then
+            warn "Backing up existing hardware configuration..."
+            mv "${TARGET_HW_CONFIG}" "${TARGET_HW_CONFIG_BAK}"
+            detail "Backup path: ${TARGET_HW_CONFIG_BAK}"
+        fi
+        info "Generating hardware configuration at ${TARGET_HW_CONFIG}..."
+        sudo nixos-generate-config --show-hardware-config > "${TARGET_HW_CONFIG}"
+        success "Generated hardware configuration."
+    else
+        warn "Skipped hardware configuration generation."
+    fi
+elif [[ "$AUTO_MODE" == "true" ]]; then
+    if [[ ! -f "${TARGET_HW_CONFIG}" ]] || [[ "$FIRST_TIME" == "true" ]]; then
+        info "Automatic mode: Generating hardware configuration..."
+        if [[ -e "${TARGET_HW_CONFIG}" || -L "${TARGET_HW_CONFIG}" ]]; then
+            mv "${TARGET_HW_CONFIG}" "${TARGET_HW_CONFIG_BAK}"
+        fi
+        sudo nixos-generate-config --show-hardware-config > "${TARGET_HW_CONFIG}"
+        success "Generated hardware configuration."
+    else
+        info "Automatic mode: Skipping hardware configuration generation (already exists)."
+    fi
+fi
+
+# --- 3. Finalization ---
+step "Final step"
+detail "You can manage your system with mn.sh or forge.sh."
+
+if [[ "$AUTO_MODE" == "true" ]]; then
+    info "Automatic mode: Applying configuration..."
+    
+    # Refresh sudo credentials
+    sudo -v
+    
+    # 1. Apply NixOS
+    info "Applying NixOS configuration..."
+    sudo nixos-rebuild switch --flake "path:${ROOT_DIR}#${hostname_value}"
+    
+    # 2. Apply Home Manager
+    info "Applying Home Manager configuration..."
+    home-manager switch -b md4nbak --flake "path:${ROOT_DIR}#${username}"
+    
+    success "Configuration applied successfully."
+elif is_interactive; then
+    read -p "Would you like to apply the configuration now? (This will run forge.sh) [y/N] " apply_conf
+    if [[ "$apply_conf" =~ ^[yY]$ ]]; then
+        [[ -f "$FORGE_SCRIPT" ]] || error "Could not find forge.sh at ${FORGE_SCRIPT}"
+        info "Running: bash ${FORGE_SCRIPT}"
+        bash "$FORGE_SCRIPT"
+    else
+        info "Next steps (manual):"
+        echo -e "  1. Edit ${YELLOW}user.nix${NC} if needed."
+        echo -e "  2. Run: ${YELLOW}bash scripts/mn.sh${NC} for the control center."
+        echo -e "  3. Or run: ${YELLOW}bash ${FORGE_SCRIPT}${NC} to apply changes directly."
+    fi
+fi
+
+echo -e "\n${GREEN}Setup finished successfully!${NC}"
+echo -e "\n${BLUE}Happy Hacking!${NC}"

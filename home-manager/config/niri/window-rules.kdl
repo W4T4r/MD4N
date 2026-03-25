@@ -1,0 +1,83 @@
+// Window rules.
+// Find more information on the wiki:
+// https://yalter.github.io/niri/Configuration:-Window-Rules
+
+window-rule {
+  geometry-corner-radius 19
+  clip-to-geometry true
+  // draw-border-with-background false
+}
+
+window-rule {
+  match app-id=r#"^org\.wezfurlong\.wezterm$"#
+  default-column-width {}
+  // default-window-height { proportion 0.5; }
+}
+
+window-rule {
+  match app-id=r#"firefox$"# title="^Picture-in-Picture$"
+  open-floating true
+  // default-floating-position x=32 y=32 relative-to="bottom-left"
+}
+
+window-rule {
+  match app-id="nm-connection-editor"
+  match app-id="org.pulseaudio.pavucontrol"
+  match app-id="wdisplays"
+  match app-id="com.ranfdev.DistroShelf"
+  match app-id="gcm-viewer"
+  match app-id="gpgui"
+  match app-id="mpv"
+  match app-id="nwg-look"
+  match app-id="org.gnome.Nautilus"
+  match app-id="org.fcitx."
+  match app-id="org.gnome.baobab"
+  match app-id="org.gnome.Calculator"
+  match app-id="org.gnome.Calendar"
+  match app-id="org.gnome.clocks"
+  match app-id="org.gnome.Connections"
+  match app-id="org.gnome.Contacts"
+  match app-id="org.gnome.Decibels"
+  match app-id="org.gnome.font-viewer"
+  match app-id="org.gnome.Logs"
+  match app-id="org.gnome.Loupe"
+  match app-id="org.gnome.Maps"
+  match app-id="org.gnome.Papers"
+  match app-id="org.gnome.Rygel.Preferences"
+  match app-id="org.gnome.seahorse.Application"
+  match app-id="org.gnome.Showtime"
+  match app-id="org.gnome.SimpleScan"
+  match app-id="org.gnome.Snapshot"
+  match app-id="org.gnome.SystemMonitor"
+  match app-id="org.gnome.TextEditor"
+  match app-id="org.gnome.Weather"
+  match app-id="org.telegram.desktop"
+  match app-id="Podman Desktop"
+  match app-id="qt6ct"
+  match app-id="steam"
+  match app-id="thunderbird"
+  match app-id="Typora"
+  match app-id="vesktop"
+  match app-id=".virt-manager-wrapped"
+  match app-id="xarchiver"
+  match app-id="Zotero"
+
+  match title="clipboard"
+  match title="Hazkey Settings"
+  match title="Kvantum Manager"
+
+  open-floating true
+}
+
+window-rule {
+  match app-id="google-chrome"
+  match app-id="nemo"
+  scroll-factor 0.2
+}
+
+window-rule {
+  match app-id="org.gnome.Maps"
+  match app-id="code"
+
+  open-maximized-to-edges true
+}

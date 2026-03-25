@@ -1,0 +1,31 @@
+{ pkgs, ... }:
+
+{
+  home.packages = with pkgs; [
+    fastfetch
+    yazi
+    yaziPlugins.gitui
+    clipse
+    cliphist
+    wl-clipboard
+    brightnessctl
+    wlsunset
+    wdisplays
+    hyprpicker
+    qt6Packages.qt6ct
+    kdePackages.qtmultimedia
+    kdePackages.qtstyleplugin-kvantum
+    nwg-look
+    kdePackages.breeze-icons
+    adwaita-icon-theme
+    candy-icons
+    sweet
+    catppuccin-qt5ct
+    catppuccin-kvantum
+    kitty-themes
+    mpv
+    typora
+    vscode
+    libsecret
+  ];
+}

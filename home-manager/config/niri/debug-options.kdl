@@ -1,0 +1,27 @@
+// Debug options.
+// Find more information on the wiki:
+// https://yalter.github.io/niri/Configuration:-Debug-Options
+
+debug {
+    // preview-render "screencast"
+    // preview-render "screen-capture"
+    // enable-overlay-planes
+    // disable-cursor-plane
+    // disable-direct-scanout
+    // restrict-primary-scanout-to-matching-format
+    // render-drm-device "/dev/dri/renderD129"
+    // ignore-drm-device "/dev/dri/renderD128"
+    // force-pipewire-invalid-modifier
+    // dbus-interfaces-in-non-session-instances
+    // wait-for-frame-completion-before-queueing
+    // emulate-zero-presentation-time
+    // disable-resize-throttling
+    // disable-transactions
+    // keep-laptop-panel-on-when-lid-is-closed
+    // disable-monitor-names
+    // strict-new-window-focus-policy
+    // Allows notification actions and window activation from Noctalia.
+    honor-xdg-activation-with-invalid-serial
+    // skip-cursor-only-updates-during-vrr
+    // deactivate-unfocused-windows
+}

@@ -1,0 +1,6 @@
+/user.local.nix
+/user.local.nix.bak
+/home-manager/config/fish/conf.d/md4n-env.fish
+/home-manager/config/fish/fish_variables
+/home-manager/config/fcitx5/conf/cached_layouts
+/home-manager/config/gtk-3.0/bookmarks

@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Neovim
+Comment=Edit text files with Neovim in kitty
+Exec=kitty nvim %F
+Icon=nvim
+Terminal=false
+Categories=Development;TextEditor;
+StartupNotify=true
