@@ -8,4 +8,6 @@ input through Hazkey and Chinese input through Rime.
 
 Rime-specific files live under [`rime/`](rime/README.md). They are deployed to
 `~/.local/share/fcitx5/rime`, which is where `fcitx5-rime` stores schemas,
-compiled data, and user dictionaries.
+compiled data, and user dictionaries. Shared custom files come from this
+repository, and the `rime-ice` schema and dictionary files are linked there from
+`nixpkgs`.

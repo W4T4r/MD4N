@@ -1,9 +1,10 @@
 # Rime
 
-User-level Rime configuration for Fcitx5.
+Repository-owned custom Rime configuration for Fcitx5.
 
-This directory is linked to `~/.local/share/fcitx5/rime`, which is the user data
-directory that `fcitx5-rime` reads and writes.
+The generated user data directory is `~/.local/share/fcitx5/rime`.
+This repository contributes custom files there, while the bundled `rime-ice`
+schema and dictionary files are linked in from `nixpkgs`.
 
 The shared setup keeps Rime focused on Simplified Chinese:
 

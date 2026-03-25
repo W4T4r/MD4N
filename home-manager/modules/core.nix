@@ -6,15 +6,33 @@
   ...
 }: let
   symlink = config.lib.file.mkOutOfStoreSymlink;
+  rimeIceData = "${pkgs.rime-ice}/share/rime-data";
+  rimeIceFiles = [
+    "custom_phrase.txt"
+    "double_pinyin.schema.yaml"
+    "double_pinyin_abc.schema.yaml"
+    "double_pinyin_flypy.schema.yaml"
+    "double_pinyin_jiajia.schema.yaml"
+    "double_pinyin_mspy.schema.yaml"
+    "double_pinyin_sogou.schema.yaml"
+    "double_pinyin_ziguang.schema.yaml"
+    "melt_eng.dict.yaml"
+    "melt_eng.schema.yaml"
+    "radical_pinyin.dict.yaml"
+    "radical_pinyin.schema.yaml"
+    "rime_ice.dict.yaml"
+    "rime_ice.schema.yaml"
+    "rime_ice_suggestion.yaml"
+    "symbols_caps_v.yaml"
+    "symbols_v.yaml"
+    "t9.schema.yaml"
+  ];
 in {
   home = {
     username = user.name;
     homeDirectory = user.home;
     stateVersion = "25.11";
     sessionPath = ["${user.dotroot}/scripts"];
-    packages = with pkgs; [
-      rime-ice
-    ];
   };
 
   nixpkgs.config.allowUnfree = true;
@@ -62,7 +80,7 @@ in {
 
       "btop".source = symlink "${user.cfg}/btop";
       "fcitx5".source = symlink "${user.cfg}/fcitx5";
-      "fish/config.fish".source = symlink "${user.cfg}/fish/config.fish";
+      "fish/conf.d/md4n.fish".source = ../config/fish/conf.d/md4n.fish;
       "fish/functions".source = symlink "${user.cfg}/fish/functions";
       "gtk-3.0".source = symlink "${user.cfg}/gtk-3.0";
       "gtk-4.0".source = symlink "${user.cfg}/gtk-4.0";
@@ -86,12 +104,18 @@ in {
       "xsettingsd".source = symlink "${user.cfg}/xsettingsd";
       "starship.toml".source = symlink "${user.cfg}/starship.toml";
     };
-    dataFile = {
-      "applications/code.desktop".source = ../applications/code.desktop;
-      "applications/neovim.desktop".source = ../applications/neovim.desktop;
-      "applications/typora.desktop".source = ../applications/typora.desktop;
-      "fcitx5/rime".source = ../config/fcitx5/rime;
-    };
+    dataFile =
+      {
+        "applications/code.desktop".source = ../applications/code.desktop;
+        "applications/neovim.desktop".source = ../applications/neovim.desktop;
+        "applications/typora.desktop".source = ../applications/typora.desktop;
+        "fcitx5/rime/default.custom.yaml".source = ../config/fcitx5/rime/default.custom.yaml;
+      }
+      // builtins.listToAttrs (map (name: {
+          name = "fcitx5/rime/${name}";
+          value.source = "${rimeIceData}/${name}";
+        })
+        rimeIceFiles);
   };
 
   home.file =
