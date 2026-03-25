@@ -88,6 +88,46 @@ bash install.sh
 
 If you plan to customize this setup for yourself, fork it first. The repository is designed so shared defaults stay in Git, while machine-specific state lives in `user.local.nix` and `~/.local/share/md4n/`.
 
+### 2. Fork and Manage Your Own Copy
+
+If you want to keep your own version online, use a fork instead of working directly against this repository.
+
+Recommended split:
+
+- Keep shared defaults, reusable app configs, and module changes in Git.
+- Keep secrets, machine-specific values, and generated runtime files out of Git.
+- Treat `user.nix` as the public baseline and `user.local.nix` as private local state.
+- Keep generated files such as `~/.local/share/md4n/niri/browser.sh` and `~/.local/share/md4n/niri/outputs.kdl` local.
+
+Typical fork workflow:
+
+```bash
+git clone git@github.com:<your-name>/MD4N.git
+cd MD4N
+git remote add upstream https://github.com/W4T4r/MD4N.git
+```
+
+Then:
+
+- Commit reusable changes to your fork.
+- Pull upstream changes from `upstream`.
+- Rebase or merge them into your fork as you prefer.
+- Regenerate `user.local.nix` and machine-local helper files on each machine with `bash scripts/setup.sh` when needed.
+
+Useful commands:
+
+```bash
+git fetch upstream
+git checkout main
+git rebase upstream/main
+git push origin main
+```
+
+Practical rule:
+
+- If another person could safely use the file, keep it in Git.
+- If the file contains secrets, machine identity, display topology, or local-only launch behavior, keep it local.
+
 The install flow is:
 1. `install.sh`: entrypoint and cleanup.
 2. `scripts/bootstrap.sh`: verifies `bash`, `sudo`, and `nix`, and enables `nix-command` / `flakes` if needed.
