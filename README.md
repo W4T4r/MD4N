@@ -61,6 +61,11 @@ Use the script layer instead of raw commands whenever possible.
 
 If you need to change machine-local answers later, re-run [scripts/setup.sh](scripts/setup.sh) and then apply again.
 
+For input methods, the shared setup now keeps Japanese input on Fcitx5 through
+Hazkey and Mozc, and Simplified Chinese input on Fcitx5 through Rime.
+The detailed Fcitx5 and Rime layout is documented in
+[home-manager/config/fcitx5/README.md](home-manager/config/fcitx5/README.md).
+
 ## Local Validation
 
 If you use `direnv`, run `direnv allow` once in the repository root.
@@ -114,6 +119,7 @@ Use these documents when you want the detailed explanation for each area:
 - [Home Manager Modules](home-manager/modules/README.md): core, programs, services, fonts, and package layering
 - [Home Manager Package Profiles](home-manager/modules/packages/README.md): the role of `minimal`, `full`, `custom`, and `max`
 - [Shared Config Tree](home-manager/config/README.md): what belongs under the repository-managed config tree
+- [Fcitx5 and Rime](home-manager/config/fcitx5/README.md): Japanese and Chinese input layout, shared profile, and Rime deployment
 - [Desktop Entry Overrides](home-manager/applications/README.md): how `.desktop` overrides are organized
 - [Wallpapers](home-manager/Wallpapers/README.md): wallpaper assets bundled with the setup
 - [Scripts](scripts/README.md): install, apply, rollback, and maintenance workflow
@@ -133,7 +139,7 @@ Use these documents when you want the detailed explanation for each area:
 ## Notes
 
 - Wayland-first desktop centered on Niri and Noctalia
-- Japanese input is configured around Fcitx5, Hazkey, and Mozc
+- Input methods are configured around Fcitx5, with Hazkey and Mozc for Japanese and Rime for Simplified Chinese
 - GNOME is present as a compatibility layer, not as the primary desktop
 - The repository scripts are added to `PATH` through Home Manager
 - Machine-local runtime helpers are generated under `~/.local/share/md4n/`
