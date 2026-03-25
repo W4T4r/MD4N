@@ -56,7 +56,6 @@ print_banner() {
     summary_row "Flow" "install.sh -> bootstrap.sh -> setup.sh"
     summary_row "user.nix" "${USER_NIX}"
     summary_row "local.nix" "${USER_LOCAL_NIX}"
-    summary_row "Fish env" "${FISH_ENV_FILE}"
     rule
 }
 
@@ -71,7 +70,6 @@ ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 USER_NIX="${ROOT_DIR}/user.nix"
 USER_LOCAL_NIX="${ROOT_DIR}/user.local.nix"
 FORGE_SCRIPT="${ROOT_DIR}/scripts/forge.sh"
-FISH_ENV_FILE="${ROOT_DIR}/home-manager/config/fish/conf.d/md4n-env.fish"
 
 detect_locale() {
     local detected=""
@@ -308,6 +306,10 @@ validate_bool_string() {
     [[ "$1" == "true" || "$1" == "false" ]]
 }
 
+validate_browser_choice() {
+    [[ "$1" == "firefox" || "$1" == "chrome" ]]
+}
+
 escape_nix_string() {
     local value=$1
     value=${value//\\/\\\\}
@@ -321,6 +323,304 @@ render_nix_bool() {
     else
         printf 'false'
     fi
+}
+
+get_modetest_output() {
+    if command -v modetest >/dev/null 2>&1; then
+        modetest -c 2>/dev/null || true
+        return 0
+    fi
+
+    if has_nix; then
+        warn "modetest is not available in PATH. Falling back to a temporary nix shell with libdrm." >&2
+        run_nixpkgs_command libdrm modetest -c || true
+    fi
+}
+
+collect_connected_drm_outputs() {
+    local modetest_output=""
+
+    modetest_output=$(get_modetest_output)
+    if [[ -z "$modetest_output" ]]; then
+        return 0
+    fi
+
+    printf '%s\n' "$modetest_output" | awk '
+        function flush_connector() {
+            if (connector_name == "" || connector_status != "connected") {
+                return
+            }
+
+            print connector_name "|" mm_width "|" mm_height "|" preferred_mode "|" modes
+        }
+
+        /^[0-9]+\t[0-9]+\t(connected|disconnected)\t/ {
+            flush_connector()
+
+            connector_status = $3
+            connector_name = $4
+            split($5, size_parts, "x")
+            mm_width = size_parts[1]
+            mm_height = size_parts[2]
+            preferred_mode = ""
+            modes = ""
+            in_modes = 0
+            next
+        }
+
+        $1 == "modes:" {
+            in_modes = 1
+            next
+        }
+
+        in_modes && $1 == "index" {
+            next
+        }
+
+        in_modes && /^[[:space:]]*#/ {
+            refresh = $3
+            gsub(/[^0-9.]/, "", refresh)
+            mode = sprintf("%s@%.3f", $2, refresh + 0)
+
+            if (modes != "") {
+                modes = modes "," mode
+            } else {
+                modes = mode
+            }
+
+            if ($0 ~ /preferred/) {
+                preferred_mode = mode
+            }
+            next
+        }
+
+        in_modes && /^[[:space:]]*props:/ {
+            in_modes = 0
+            next
+        }
+
+        END {
+            flush_connector()
+        }
+    '
+}
+
+suggest_output_scale() {
+    local mode=$1
+    local mm_width=${2:-0}
+    local mm_height=${3:-0}
+    local width=${mode%%x*}
+    local rest=${mode#*x}
+    local height=${rest%@*}
+
+    if [[ "$mm_width" =~ ^[0-9]+$ && "$mm_height" =~ ^[0-9]+$ && "$mm_width" -gt 0 && "$mm_height" -gt 0 ]]; then
+        awk -v w="$width" -v h="$height" -v mmw="$mm_width" -v mmh="$mm_height" '
+            function sqrt_approx(x) { return sqrt(x) }
+            BEGIN {
+                pixel_diag = sqrt_approx((w * w) + (h * h))
+                inch_diag = sqrt_approx((mmw * mmw) + (mmh * mmh)) / 25.4
+                dpi = (inch_diag > 0) ? pixel_diag / inch_diag : 0
+
+                if (dpi >= 210) {
+                    print "2.00"
+                } else if (dpi >= 160) {
+                    print "1.50"
+                } else {
+                    print "1.00"
+                }
+            }
+        '
+        return 0
+    fi
+
+    if [[ "$width" -ge 3000 ]]; then
+        printf '2.00\n'
+    elif [[ "$width" -ge 2200 ]]; then
+        printf '1.50\n'
+    else
+        printf '1.00\n'
+    fi
+}
+
+validate_scale_value() {
+    [[ "$1" =~ ^[0-9]+([.][0-9]+)?$ ]]
+}
+
+select_output_index() {
+    local default_index=$1
+    local total=$2
+    local answer=""
+
+    while true; do
+        read -p "Select the output to configure [${default_index}]: " answer
+        answer=${answer:-$default_index}
+
+        if [[ "$answer" =~ ^[0-9]+$ && "$answer" -ge 1 && "$answer" -le "$total" ]]; then
+            printf '%s\n' "$answer"
+            return 0
+        fi
+
+        warn "Please enter a number between 1 and ${total}."
+    done
+}
+
+select_mode_index() {
+    local default_index=$1
+    local total=$2
+    local answer=""
+
+    while true; do
+        read -p "Select the output mode [${default_index}]: " answer
+        answer=${answer:-$default_index}
+
+        if [[ "$answer" =~ ^[0-9]+$ && "$answer" -ge 1 && "$answer" -le "$total" ]]; then
+            printf '%s\n' "$answer"
+            return 0
+        fi
+
+        warn "Please enter a number between 1 and ${total}."
+    done
+}
+
+render_niri_outputs_config() {
+    local output_name=$1
+    local output_mode=$2
+    local output_scale=$3
+
+    cat <<EOF
+// Output configuration.
+// Auto-generated by scripts/setup.sh
+// Find more information on the wiki:
+// https://yalter.github.io/niri/Configuration:-Outputs
+
+output "$(escape_nix_string "$output_name")" {
+    mode "$(escape_nix_string "$output_mode")"
+    scale ${output_scale}
+    transform "normal"
+    focus-at-startup
+    background-color "#2e2e30"
+    backdrop-color "#2e2e30"
+
+    hot-corners {
+        top-left
+    }
+}
+EOF
+}
+
+configure_niri_outputs() {
+    local output_file="/home/${username}/.local/share/md4n/niri/outputs.kdl"
+    local output_backup="${output_file}.bak"
+    local -a outputs=()
+    local -a mode_list=()
+    local i=0
+    local entry=""
+    local connector_name=""
+    local mm_width=""
+    local mm_height=""
+    local preferred_mode=""
+    local modes_csv=""
+    local selected_output_index=1
+    local selected_mode_index=1
+    local selected_output=""
+    local selected_mode=""
+    local selected_scale=""
+    local default_output_index=1
+    local default_mode_index=1
+    local output_summary=""
+
+    mapfile -t outputs < <(collect_connected_drm_outputs)
+
+    if [[ ${#outputs[@]} -eq 0 ]]; then
+        warn "No connected DRM outputs were detected. Keeping the existing niri outputs configuration."
+        return 0
+    fi
+
+    step "Preparing niri output configuration"
+    detail "Using modetest to detect DRM connectors, modes, and preferred timings."
+
+    if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
+        detail "Detected outputs:"
+        for i in "${!outputs[@]}"; do
+            IFS='|' read -r connector_name mm_width mm_height preferred_mode modes_csv <<< "${outputs[$i]}"
+            output_summary=$connector_name
+            if [[ -n "$preferred_mode" ]]; then
+                output_summary="${output_summary} (preferred ${preferred_mode})"
+            fi
+            if [[ "$mm_width" != "0" && "$mm_height" != "0" ]]; then
+                output_summary="${output_summary}, ${mm_width}x${mm_height}mm"
+            fi
+            detail "  $((i + 1)). ${output_summary}"
+
+            if [[ "$connector_name" == eDP-* ]]; then
+                default_output_index=$((i + 1))
+            fi
+        done
+
+        selected_output_index=$(select_output_index "$default_output_index" "${#outputs[@]}")
+    fi
+
+    selected_output="${outputs[$((selected_output_index - 1))]}"
+    IFS='|' read -r connector_name mm_width mm_height preferred_mode modes_csv <<< "$selected_output"
+    IFS=',' read -r -a mode_list <<< "$modes_csv"
+
+    if [[ ${#mode_list[@]} -eq 0 ]]; then
+        warn "No display modes were detected for ${connector_name}. Keeping the existing niri outputs configuration."
+        return 0
+    fi
+
+    if [[ -n "$preferred_mode" ]]; then
+        for i in "${!mode_list[@]}"; do
+            if [[ "${mode_list[$i]}" == "$preferred_mode" ]]; then
+                default_mode_index=$((i + 1))
+                break
+            fi
+        done
+    fi
+
+    if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
+        detail "Available modes for ${connector_name}:"
+        for i in "${!mode_list[@]}"; do
+            output_summary="${mode_list[$i]}"
+            if [[ $((i + 1)) -eq "$default_mode_index" ]]; then
+                output_summary="${output_summary} [preferred]"
+            fi
+            detail "  $((i + 1)). ${output_summary}"
+        done
+
+        selected_mode_index=$(select_mode_index "$default_mode_index" "${#mode_list[@]}")
+    else
+        selected_mode_index=$default_mode_index
+    fi
+
+    selected_mode="${mode_list[$((selected_mode_index - 1))]}"
+    selected_scale=$(suggest_output_scale "$selected_mode" "$mm_width" "$mm_height")
+
+    if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
+        detail "Suggested scale for ${connector_name} at ${selected_mode}: ${selected_scale}"
+        read -p "Enter scale for ${connector_name} [${selected_scale}]: " output_summary
+        output_summary=${output_summary:-$selected_scale}
+
+        if ! validate_scale_value "$output_summary"; then
+            error "Invalid scale value: ${output_summary}"
+        fi
+
+        selected_scale=$(printf '%.2f' "$output_summary")
+    fi
+
+    if [[ -f "$output_file" ]]; then
+        warn "Creating backup of outputs.kdl..."
+        cp "$output_file" "$output_backup"
+        detail "Backup path: ${output_backup}"
+    fi
+
+    mkdir -p "$(dirname "$output_file")"
+    info "Generating ${output_file}..."
+    render_niri_outputs_config "$connector_name" "$selected_mode" "$selected_scale" > "$output_file"
+    success "Created ${output_file}"
+    detail "Output   : ${connector_name}"
+    detail "Mode     : ${selected_mode}"
+    detail "Scale    : ${selected_scale}"
 }
 
 print_package_profile_choices() {
@@ -488,56 +788,40 @@ run_fingerprint_enroll() {
     return 1
 }
 
-render_fish_env() {
-    local dotroot=$1
+render_niri_browser_script() {
+    local browser=$1
 
-cat <<EOF
-# Auto-generated by scripts/setup.sh
-set -gx MD4N_ROOT "${dotroot}"
-set -gx MD4N_SCRIPTS "\$MD4N_ROOT/scripts"
-if not contains "\$MD4N_SCRIPTS" \$PATH
-    fish_add_path --append "\$MD4N_SCRIPTS"
-end
+    if [[ "$browser" == "chrome" ]]; then
+        cat <<'EOF'
+#!/usr/bin/env fish
+google-chrome-stable --profile-directory="Default" &
 EOF
+    else
+        cat <<'EOF'
+#!/usr/bin/env fish
+firefox &
+EOF
+    fi
 }
 
-write_fish_env() {
-    local dotroot=$1
-    local new_content
-    local action="overwrite"
+write_niri_browser_script() {
+    local username=$1
+    local browser=$2
+    local browser_script_file="/home/${username}/.local/share/md4n/niri/browser.sh"
+    local browser_script_backup="${browser_script_file}.bak"
 
-    mkdir -p "$(dirname "$FISH_ENV_FILE")"
-    new_content=$(render_fish_env "$dotroot")
+    mkdir -p "$(dirname "$browser_script_file")"
 
-    if [[ -f "$FISH_ENV_FILE" ]]; then
-        if cmp -s "$FISH_ENV_FILE" <(printf '%s\n' "$new_content"); then
-            info "Fish environment file is already up to date."
-            return 0
-        fi
-
-        if is_interactive; then
-            echo -e "${YELLOW}Existing Fish environment file found:${NC} ${FISH_ENV_FILE}"
-            read -r -p "Overwrite it with the new MD4N environment settings, or keep the current file? [overwrite/keep] " action
-            action=${action:-overwrite}
-        else
-            action="keep"
-        fi
-
-        case "$action" in
-            overwrite)
-                ;;
-            keep)
-                warn "Keeping existing Fish environment file unchanged."
-                return 0
-                ;;
-            *)
-                warn "Unknown choice: ${action}. Keeping existing Fish environment file unchanged."
-                return 0
-                ;;
-        esac
+    if [[ -f "$browser_script_file" ]]; then
+        warn "Creating backup of browser.sh..."
+        cp "$browser_script_file" "$browser_script_backup"
+        detail "Backup path: ${browser_script_backup}"
     fi
 
-    printf '%s\n' "$new_content" > "$FISH_ENV_FILE"
+    info "Generating ${browser_script_file}..."
+    render_niri_browser_script "$browser" > "$browser_script_file"
+    chmod +x "$browser_script_file"
+    success "Created ${browser_script_file}"
 }
 
 print_banner
@@ -599,6 +883,7 @@ DEFAULT_HOSTNAME=$(detect_hostname)
 DEFAULT_GIT_NAME=$(detect_git_config user.name)
 DEFAULT_GIT_EMAIL=$(detect_git_config user.email)
 DEFAULT_GPU_VENDOR=$(detect_gpu_vendor)
+DEFAULT_BROWSER="firefox"
 
 if [[ -z "$DEFAULT_GIT_NAME" ]]; then
     DEFAULT_GIT_NAME=$DEFAULT_FULLNAME
@@ -768,6 +1053,19 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
         fi
     fi
 
+    read -p "Select your default browser launcher [firefox]: " browser_choice
+    browser_choice=${browser_choice:-firefox}
+    browser_choice=$(printf '%s' "$browser_choice" | tr '[:upper:]' '[:lower:]')
+
+    if ! validate_browser_choice "$browser_choice"; then
+        error "Invalid browser choice: $browser_choice"
+    fi
+
+    if [[ "$browser_choice" == "chrome" && "$enable_google_chrome" != "true" ]]; then
+        warn "Chrome launcher selected. Enabling Google Chrome package."
+        enable_google_chrome="true"
+    fi
+
     echo
     info "Review your MD4N settings."
     detail "Username : ${username}"
@@ -799,6 +1097,7 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
     detail "Virt Mgr : ${enable_virt_manager}"
     detail "Ollama   : ${enable_ollama}"
     detail "Steam    : ${enable_steam}"
+    detail "Browser  : ${browser_choice}"
     detail "GPU      : ${gpu_vendor}"
     detail "Fingerprint: ${enable_fingerprint}"
     detail "Dualboot : ${enable_dual_boot}"
@@ -850,6 +1149,7 @@ else
     enable_virt_manager="true"
     enable_ollama="true"
     enable_steam="true"
+    browser_choice=$DEFAULT_BROWSER
     gpu_vendor=$(normalize_gpu_vendor "$DEFAULT_GPU_VENDOR")
     enable_fingerprint="false"
     enable_dual_boot="false"
@@ -1044,6 +1344,7 @@ let
   enableVirtManager = $(render_nix_bool "$enable_virt_manager");
   enableOllama = $(render_nix_bool "$enable_ollama");
   enableSteam = $(render_nix_bool "$enable_steam");
+  browser = "$(escape_nix_string "$browser_choice")";
   gpuVendor = "$(escape_nix_string "$gpu_vendor")";
   enableFingerprint = $(render_nix_bool "$enable_fingerprint");
   enableDualBoot = $(render_nix_bool "$enable_dual_boot");
@@ -1053,19 +1354,19 @@ let
   homemanager = "\${dotroot}/home-manager";
   cfg = "\${homemanager}/config";
   app = "\${homemanager}/applications";
+  faceFile = "";
+  niriBrowserScript = "\${home}/.local/share/md4n/niri/browser.sh";
+  niriOutputsFile = "\${home}/.local/share/md4n/niri/outputs.kdl";
 in
 {
-  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableCustomFonts enableBcompare5 enableVesktop enableCava enableGeminiCli enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtualization enableVirtManager enableOllama enableSteam gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app;
+  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableCustomFonts enableBcompare5 enableVesktop enableCava enableGeminiCli enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtualization enableVirtManager enableOllama enableSteam browser gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile niriBrowserScript niriOutputsFile;
 }
 EOF
 
 success "Created ${USER_LOCAL_NIX}"
 
-step "Writing shell environment"
-detail "Exports MD4N_ROOT and MD4N_SCRIPTS"
-detail "Adds scripts/ to Fish PATH"
-write_fish_env "$dotroot"
-success "Fish environment setup finished for ${FISH_ENV_FILE}"
+write_niri_browser_script "$username" "$browser_choice"
+configure_niri_outputs
 
 # --- 2. Hardware Configuration ---
 step "Preparing hardware configuration"

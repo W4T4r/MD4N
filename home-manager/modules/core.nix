@@ -8,6 +8,7 @@ in
     username = user.name;
     homeDirectory = user.home;
     stateVersion = "25.11";
+    sessionPath = [ "${user.dotroot}/scripts" ];
   };
 
   nixpkgs.config.allowUnfree = true;
@@ -54,11 +55,23 @@ in
 
       "btop".source = symlink "${user.cfg}/btop";
       "fcitx5".source = symlink "${user.cfg}/fcitx5";
-      "fish".source = symlink "${user.cfg}/fish";
+      "fish/config.fish".source = symlink "${user.cfg}/fish/config.fish";
+      "fish/functions".source = symlink "${user.cfg}/fish/functions";
       "gtk-3.0".source = symlink "${user.cfg}/gtk-3.0";
       "gtk-4.0".source = symlink "${user.cfg}/gtk-4.0";
       "Kvantum".source = symlink "${user.cfg}/Kvantum";
-      "niri".source = symlink "${user.cfg}/niri";
+      "niri/animations.kdl".source = symlink "${user.cfg}/niri/animations.kdl";
+      "niri/config.kdl".source = symlink "${user.cfg}/niri/config.kdl";
+      "niri/debug-options.kdl".source = symlink "${user.cfg}/niri/debug-options.kdl";
+      "niri/input.kdl".source = symlink "${user.cfg}/niri/input.kdl";
+      "niri/key-bindings.kdl".source = symlink "${user.cfg}/niri/key-bindings.kdl";
+      "niri/layer-rules.kdl".source = symlink "${user.cfg}/niri/layer-rules.kdl";
+      "niri/layout.kdl".source = symlink "${user.cfg}/niri/layout.kdl";
+      "niri/miscellaneous.kdl".source = symlink "${user.cfg}/niri/miscellaneous.kdl";
+      "niri/outputs.kdl".source = symlink user.niriOutputsFile;
+      "niri/window-rules.kdl".source = symlink "${user.cfg}/niri/window-rules.kdl";
+      "niri/scripts/browser.sh".source = symlink user.niriBrowserScript;
+      "niri/scripts/polkit.sh".source = symlink "${user.cfg}/niri/scripts/polkit.sh";
       "noctalia".source = symlink "${user.cfg}/noctalia";
       "nvtop".source = symlink "${user.cfg}/nvtop";
       "nwg-look".source = symlink "${user.cfg}/nwg-look";
@@ -73,11 +86,14 @@ in
     };
   };
 
-  home.file = {
-    ".face".source = ../.face;
-    "./Pictures/Wallpapers/nixos-wallpaper-catppuccin-macchiato.png".source =
-      ../Wallpapers/nixos-wallpaper-catppuccin-macchiato.png;
-  };
+  home.file =
+    lib.optionalAttrs ((user ? faceFile) && user.faceFile != "") {
+      ".face".source = symlink user.faceFile;
+    }
+    // {
+      "./Pictures/Wallpapers/nixos-wallpaper-catppuccin-macchiato.png".source =
+        ../Wallpapers/nixos-wallpaper-catppuccin-macchiato.png;
+    };
 
   i18n.inputMethod = {
     enable = true;
