@@ -1,6 +1,8 @@
-{ pkgs, user, ... }:
-
 {
+  pkgs,
+  user,
+  ...
+}: {
   services.fprintd.enable = user.enableFingerprint or false;
   services.upower.enable = true;
   services.power-profiles-daemon.enable = true;
@@ -12,10 +14,9 @@
   services.ollama = {
     enable = user.enableOllama or false;
     package =
-      if (user.gpuVendor or "generic") == "amd" then
-        pkgs.ollama-rocm
-      else
-        pkgs.ollama;
+      if (user.gpuVendor or "generic") == "amd"
+      then pkgs.ollama-rocm
+      else pkgs.ollama;
   };
 
   programs.steam = {

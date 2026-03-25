@@ -514,7 +514,6 @@ configure_niri_outputs() {
     local -a outputs=()
     local -a mode_list=()
     local i=0
-    local entry=""
     local connector_name=""
     local mm_width=""
     local mm_height=""
@@ -1382,7 +1381,7 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
             detail "Backup path: ${TARGET_HW_CONFIG_BAK}"
         fi
         info "Generating hardware configuration at ${TARGET_HW_CONFIG}..."
-        sudo nixos-generate-config --show-hardware-config > "${TARGET_HW_CONFIG}"
+        sudo nixos-generate-config --show-hardware-config | tee "${TARGET_HW_CONFIG}" >/dev/null
         success "Generated hardware configuration."
     else
         warn "Skipped hardware configuration generation."
@@ -1393,7 +1392,7 @@ elif [[ "$AUTO_MODE" == "true" ]]; then
         if [[ -e "${TARGET_HW_CONFIG}" || -L "${TARGET_HW_CONFIG}" ]]; then
             mv "${TARGET_HW_CONFIG}" "${TARGET_HW_CONFIG_BAK}"
         fi
-        sudo nixos-generate-config --show-hardware-config > "${TARGET_HW_CONFIG}"
+        sudo nixos-generate-config --show-hardware-config | tee "${TARGET_HW_CONFIG}" >/dev/null
         success "Generated hardware configuration."
     else
         info "Automatic mode: Skipping hardware configuration generation (already exists)."

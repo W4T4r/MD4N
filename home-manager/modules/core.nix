@@ -1,14 +1,17 @@
-{ config, pkgs, lib, user, ... }:
-
-let
-  symlink = config.lib.file.mkOutOfStoreSymlink;
-in
 {
+  config,
+  pkgs,
+  lib,
+  user,
+  ...
+}: let
+  symlink = config.lib.file.mkOutOfStoreSymlink;
+in {
   home = {
     username = user.name;
     homeDirectory = user.home;
     stateVersion = "25.11";
-    sessionPath = [ "${user.dotroot}/scripts" ];
+    sessionPath = ["${user.dotroot}/scripts"];
   };
 
   nixpkgs.config.allowUnfree = true;
@@ -34,14 +37,14 @@ in
     mimeApps = {
       enable = true;
       defaultApplications = {
-        "text/markdown" = [ "typora.desktop" ];
-        "text/plain" = [ "neovim.desktop" ];
-        "text/x-python" = [ "neovim.desktop" ];
-        "text/x-shellscript" = [ "neovim.desktop" ];
-        "text/x-csrc" = [ "neovim.desktop" ];
-        "text/x-c++src" = [ "neovim.desktop" ];
-        "text/x-java" = [ "neovim.desktop" ];
-        "text/x-javascript" = [ "neovim.desktop" ];
+        "text/markdown" = ["typora.desktop"];
+        "text/plain" = ["neovim.desktop"];
+        "text/x-python" = ["neovim.desktop"];
+        "text/x-shellscript" = ["neovim.desktop"];
+        "text/x-csrc" = ["neovim.desktop"];
+        "text/x-c++src" = ["neovim.desktop"];
+        "text/x-java" = ["neovim.desktop"];
+        "text/x-javascript" = ["neovim.desktop"];
       };
     };
     configFile = {

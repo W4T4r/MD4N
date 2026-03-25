@@ -24,6 +24,8 @@ Do not ask users to hand-edit `user.local.nix`.
 
 Before opening a change, run the checks you can on a NixOS machine and include the results in the PR or patch notes.
 
+- `direnv allow` (optional, for the local validation shell)
+- `nix flake check`
 - `bash scripts/setup.sh`
 - `bash scripts/forge.sh --home`
 - `bash scripts/forge.sh --os`

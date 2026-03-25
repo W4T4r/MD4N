@@ -6,13 +6,16 @@
 # ██║ ╚═╝ ██║██████╔╝     ██║██║ ╚████║
 # ╚═╝     ╚═╝╚═════╝      ╚═╝╚═╝  ╚═══╝
 #
-{ config, pkgs, inputs, user, ... }:
-
-let
+{
+  config,
+  pkgs,
+  inputs,
+  user,
+  ...
+}: let
   packageProfile = user.packageProfile or "full";
   virtualizationEnabled = (user.enableVirtualization or true) && packageProfile != "minimal";
-in
-{
+in {
   imports =
     [
       ./hardware-configuration.nix
@@ -22,5 +25,9 @@ in
       ./modules/services.nix
       ./modules/packages.nix
     ]
-    ++ (if virtualizationEnabled then [ ./modules/virtualization.nix ] else [ ]);
+    ++ (
+      if virtualizationEnabled
+      then [./modules/virtualization.nix]
+      else []
+    );
 }

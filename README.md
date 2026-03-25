@@ -30,6 +30,7 @@ This top-level README is the operator guide: how to install it, regenerate machi
 - Shared defaults live in [user.nix](user.nix).
 - Machine-local answers are generated into `user.local.nix` by [scripts/setup.sh](scripts/setup.sh).
 - Generated local state should be regenerated through the scripts, not hand-edited.
+- `direnv` users can run `direnv allow` in the repository root to load the local validation toolchain automatically.
 
 ## Quick Start
 
@@ -58,6 +59,17 @@ Use the script layer instead of raw commands whenever possible.
 - Clean up and maintain generations with [scripts/tune.sh](scripts/tune.sh)
 
 If you need to change machine-local answers later, re-run [scripts/setup.sh](scripts/setup.sh) and then apply again.
+
+## Local Validation
+
+If you use `direnv`, run `direnv allow` once in the repository root.
+That loads the flake dev shell with local validation tools such as `alejandra`, `shellcheck`, `statix`, `deadnix`, and `actionlint`.
+
+The main validation entrypoint remains:
+
+```bash
+nix flake check
+```
 
 ## Setup Behavior
 

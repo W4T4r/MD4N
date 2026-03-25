@@ -1,21 +1,21 @@
-{ inputs, user, ... }:
-
+{
+  inputs,
+  user,
+  ...
+}:
 # ███╗   ███╗██████╗ ██╗  ██╗███╗   ██╗
 # ████╗ ████║██╔══██╗██║  ██║████╗  ██║
 # ██╔████╔██║██║  ██║███████║██╔██╗ ██║
 # ██║╚██╔╝██║██║  ██║╚════██║██║╚██╗██║
 # ██║ ╚═╝ ██║██████╔╝     ██║██║ ╚████║
 # ╚═╝     ╚═╝╚═════╝      ╚═╝╚═╝  ╚═══╝
-
 let
   packageProfile = user.packageProfile or "full";
   packageModule =
-    if builtins.elem packageProfile [ "minimal" "full" "custom" "max" ] then
-      ./modules/packages + "/${packageProfile}.nix"
-    else
-      throw "Unsupported package profile '${packageProfile}' in user.nix";
-in
-{
+    if builtins.elem packageProfile ["minimal" "full" "custom" "max"]
+    then ./modules/packages + "/${packageProfile}.nix"
+    else throw "Unsupported package profile '${packageProfile}' in user.nix";
+in {
   imports =
     [
       ./modules/core.nix
@@ -25,5 +25,9 @@ in
       inputs.nix4nvchad.homeManagerModule
       inputs.nix-hazkey.homeModules.hazkey
     ]
-    ++ (if user.enableCustomFonts or false then [ ./modules/fonts.nix ] else [ ]);
+    ++ (
+      if user.enableCustomFonts or false
+      then [./modules/fonts.nix]
+      else []
+    );
 }

@@ -69,8 +69,11 @@ print_dashboard_body() {
 }
 
 print_dashboard() {
-    local gen=$(current_system_generation || echo "?")
-    local usage=$(store_usage_human || echo "unknown")
+    local gen
+    local usage
+
+    gen=$(current_system_generation || echo "?")
+    usage=$(store_usage_human || echo "unknown")
 
     printf '\033[H\033[2J'
     echo
@@ -115,8 +118,8 @@ current_system_generation() {
 }
 
 store_usage_human() {
-    local used size percent fstype
-    read -r used size percent fstype < <(df -B1 --output=used,size,pcent,fstype /nix/store 2>/dev/null | tail -n 1) || return 1
+    local used size percent
+    read -r used size percent _ < <(df -B1 --output=used,size,pcent,fstype /nix/store 2>/dev/null | tail -n 1) || return 1
     [[ -n "${used:-}" && -n "${size:-}" ]] || return 1
     printf '%s / %s (%s)' \
         "$(numfmt --to=iec-i --suffix=B --format='%.2f' "$used")" \

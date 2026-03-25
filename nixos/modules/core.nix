@@ -1,16 +1,16 @@
-{ pkgs, user, ... }:
-
-let
+{
+  pkgs,
+  user,
+  ...
+}: let
   dualBootEnabled = user.enableDualBoot or false;
   hibernateEnabled = (user.enableHibernate or false) && !dualBootEnabled;
   virtualizationEnabled = (user.enableVirtualization or true) && (user.packageProfile or "full") != "minimal";
   virtualizationGroups =
-    if !virtualizationEnabled then
-      [ ]
-    else
-      [ "podman" "libvirtd" "kvm" ];
-in
-{
+    if !virtualizationEnabled
+    then []
+    else ["podman" "libvirtd" "kvm"];
+in {
   networking.hostName = user.hostname;
   networking.networkmanager.enable = true;
 
@@ -31,14 +31,14 @@ in
   users.users.${user.name} = {
     isNormalUser = true;
     description = user.fullname;
-    extraGroups = [ "networkmanager" "wheel" ] ++ virtualizationGroups;
+    extraGroups = ["networkmanager" "wheel"] ++ virtualizationGroups;
     shell = pkgs.fish;
   };
 
   programs.fish.enable = true;
 
   nixpkgs.config.allowUnfree = true;
-  nix.settings.experimental-features = [ "nix-command" "flakes" ];
+  nix.settings.experimental-features = ["nix-command" "flakes"];
   system.stateVersion = "25.11";
 
   systemd.targets = {

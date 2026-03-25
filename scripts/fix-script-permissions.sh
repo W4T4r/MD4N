@@ -63,7 +63,8 @@ for script in "${scripts[@]}"; do
     fi
 done
 
-read -r -p "$(printf "${BLUE}[?]${NC} Update MD4N script permissions now? [y/N] ")" confirm
+prompt="$(printf '%b' "${BLUE}[?]${NC} Update MD4N script permissions now? [y/N] ")"
+read -r -p "$prompt" confirm
 if should_quit "$confirm"; then
     echo
     exit 0

@@ -7,7 +7,6 @@
 #
 # user.nix - Shared defaults committed to the repository
 # Override these values locally in user.local.nix.
-
 let
   name = "user";
   fullname = "Your Name";
@@ -51,7 +50,6 @@ let
   browser = "firefox";
   niriBrowserScript = "${home}/.local/share/md4n/niri/browser.sh";
   niriOutputsFile = "${home}/.local/share/md4n/niri/outputs.kdl";
-in
-{
+in {
   inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableCustomFonts enableBcompare5 enableVesktop enableCava enableGeminiCli enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtualization enableVirtManager enableOllama enableSteam gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile browser niriBrowserScript niriOutputsFile;
 }

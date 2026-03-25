@@ -27,7 +27,6 @@ USER_NIX="${ROOT_DIR}/user.nix"
 USER_LOCAL_NIX="${ROOT_DIR}/user.local.nix"
 USERNAME="User"
 CHOSEN_GENERATIONS=""
-CHOSEN_PACKAGES=""
 USER_PROFILE_SENTINEL="__MD4N_USER_PROFILE__"
 
 # --- Initialization ---
@@ -141,8 +140,8 @@ current_system_generation() {
 }
 
 store_usage_human() {
-    local used size percent fstype
-    read -r used size percent fstype < <(df -B1 --output=used,size,pcent,fstype /nix/store 2>/dev/null | tail -n 1) || return 1
+    local used size percent
+    read -r used size percent _ < <(df -B1 --output=used,size,pcent,fstype /nix/store 2>/dev/null | tail -n 1) || return 1
     [[ -n "${used:-}" && -n "${size:-}" ]] || return 1
     printf '%s / %s (%s)' \
         "$(numfmt --to=iec-i --suffix=B --format='%.2f' "$used")" \

@@ -1,6 +1,9 @@
-{ pkgs, lib, user, ... }:
-
 {
+  pkgs,
+  lib,
+  user,
+  ...
+}: {
   programs = {
     home-manager.enable = true;
     gitui.enable = true;
@@ -51,10 +54,11 @@
         dockerfile-language-server
         emmet-language-server
         nixd
-        (python3.withPackages (ps: with ps; [
-          python-lsp-server
-          flake8
-        ]))
+        (python3.withPackages (ps:
+          with ps; [
+            python-lsp-server
+            flake8
+          ]))
       ];
       chadrcConfig = ''
         local M = {}

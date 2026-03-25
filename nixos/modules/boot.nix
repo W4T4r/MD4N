@@ -1,6 +1,9 @@
-{ pkgs, inputs, user, ... }:
-
 {
+  pkgs,
+  inputs,
+  user,
+  ...
+}: {
   boot.loader = {
     grub = {
       enable = true;
@@ -13,8 +16,10 @@
     efi.canTouchEfiVariables = true;
   };
 
-  swapDevices = [{
-    device = "/var/lib/swapfile";
-    size = 16 * 1024;
-  }];
+  swapDevices = [
+    {
+      device = "/var/lib/swapfile";
+      size = 16 * 1024;
+    }
+  ];
 }

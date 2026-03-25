@@ -70,7 +70,8 @@ echo "${GRAY}------------------------------------------------------------${NC}"
 echo "Found ${BOLD}${file_count}${NC} backup files that can be removed. Total reclaimable space: ${RED}$(human_size "$total_size")${NC}"
 echo
 
-read -r -p "$(printf "${BLUE}[?]${NC} Remove MD4N backups now? [y/N] ")" confirm
+prompt="$(printf '%b' "${BLUE}[?]${NC} Remove MD4N backups now? [y/N] ")"
+read -r -p "$prompt" confirm
 if should_quit "$confirm"; then
     echo
     exit 0
