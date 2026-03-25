@@ -15,7 +15,7 @@
 [![WM](https://img.shields.io/badge/WM-Niri-7C4DFF)](https://github.com/YaLTeR/niri)
 [![Theme](https://img.shields.io/badge/Theme-Catppuccin-F5E0DC?logo=catppuccin&logoColor=white)](https://github.com/catppuccin/catppuccin)
 
-**MD4N** is a modular NixOS + Home Manager configuration centered around the **Niri** scrollable tiling window manager. It uses a script-driven workflow for installation, rebuilds, rollback, and maintenance, while keeping shared defaults in `user.nix` and personal machine-specific values in `user.local.nix`.
+**MD4N** is a modular NixOS + Home Manager configuration centered around the **Niri** scrollable tiling window manager. It uses a script-driven workflow for installation, rebuilds, rollback, and maintenance, while keeping shared defaults in `user.nix` and generating machine-specific values into `user.local.nix`.
 
 ---
 
@@ -23,7 +23,7 @@
 
 - 🌌 **Niri WM**: A Wayland-first setup built around Niri and Noctalia Shell.
 - 🧩 **Modular Layout**: `configuration.nix` and `home.nix` stay as stable entrypoints while internal modules split system, services, programs, fonts, and package profiles.
-- 👤 **Private Local Overrides**: Setup writes hostname, locale, timezone, Git identity, package profile, virtualization preference, GPU vendor, dual-boot support, hibernate preference, browser preference, and optional personal paths into `user.local.nix`, which stays out of Git.
+- 👤 **Generated Local Overrides**: Setup writes hostname, locale, timezone, Git identity, package profile, virtualization preference, GPU vendor, dual-boot support, hibernate preference, browser preference, and optional personal paths into `user.local.nix`, which stays out of Git and is meant to be regenerated through `setup.sh`.
 - 📦 **Profile-Aware Packages**: `minimal`, `full`, `custom`, and `max` profiles are selected in setup and loaded internally by Home Manager and NixOS modules.
 - 🎛️ **Guided Package Selection**: `full` asks about less-common apps one by one, `custom` asks one by one about everything outside the minimal baseline, and `max` applies the author's all-in preset after an explicit confirmation.
 - 🖥️ **GPU-Aware Defaults**: AMD systems use ROCm variants such as `btop-rocm` and `ollama-rocm`; other systems fall back to the generic packages.
@@ -56,7 +56,7 @@ MD4N keeps the flake entrypoints stable and separates shared defaults from local
 
 - **`flake.nix`**: Always points at [nixos/configuration.nix](/home/donghang/Documents/MD4N/nixos/configuration.nix) and [home-manager/home.nix](/home/donghang/Documents/MD4N/home-manager/home.nix).
 - **`user.nix`**: Repository-safe defaults that can be shared publicly.
-- **`user.local.nix`**: Generated during setup. It stores username, full name, hostname, locale, timezone, Git name/email, package profile, custom-font opt-in, virtualization preference, GPU vendor, dual-boot support, hibernate preference, browser preference, and derived paths.
+- **`user.local.nix`**: Generated during setup. It stores username, full name, hostname, locale, timezone, Git name/email, package profile, custom-font opt-in, virtualization preference, GPU vendor, dual-boot support, hibernate preference, browser preference, and derived paths. Treat it as generated state, not as a hand-edited config file.
 - **`nixos/`**: System-level modules for core settings, boot, desktop, services, packages, and virtualization support that can be toggled in setup.
 - **`home-manager/`**: User-level modules for core dotfiles, programs, services, optional fonts, and profile-specific package sets.
 - **`scripts/`**: Interactive bash consoles and bootstrap helpers that wrap common Nix operations.
@@ -96,7 +96,7 @@ Recommended split:
 
 - Keep shared defaults, reusable app configs, and module changes in Git.
 - Keep secrets, machine-specific values, and generated runtime files out of Git.
-- Treat `user.nix` as the public baseline and `user.local.nix` as private local state.
+- Treat `user.nix` as the public baseline and `user.local.nix` as generated private local state.
 - Keep generated files such as `~/.local/share/md4n/niri/browser.sh` and `~/.local/share/md4n/niri/outputs.kdl` local.
 
 Typical fork workflow:
@@ -112,7 +112,7 @@ Then:
 - Commit reusable changes to your fork.
 - Pull upstream changes from `upstream`.
 - Rebase or merge them into your fork as you prefer.
-- Regenerate `user.local.nix` and machine-local helper files on each machine with `bash scripts/setup.sh` when needed.
+- Regenerate `user.local.nix` and machine-local helper files on each machine with `bash scripts/setup.sh` when needed instead of editing them by hand.
 
 Useful commands:
 
@@ -152,7 +152,7 @@ During setup, MD4N can run in either guided mode or automatic mode.
 - **Google Chrome note**:
   When you log in with `fprintd`, Chrome may still ask for your password in some cases.
 - **GPU detection**:
-  Auto-detection prefers `/sys/class/drm` PCI vendor IDs and falls back to `lspci`; you can still override it manually in guided mode.
+  Auto-detection prefers `/sys/class/drm` PCI vendor IDs and falls back to `lspci`; guided mode still lets you choose a different value before the file is generated.
 - **Fingerprint note**:
   When fingerprint authentication is enabled, setup can launch `fprintd-enroll <username>` after applying the configuration.
 - **Dependency fallback**:

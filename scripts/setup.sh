@@ -643,7 +643,7 @@ print_font_preferences_help() {
     detail "Custom font preferences only toggle the dedicated font module."
     detail "You are expected to fine-tune the actual font families later."
     detail "Edit: ${ROOT_DIR}/home-manager/modules/fonts.nix"
-    detail "If you only want to turn the module on or off later, edit: ${ROOT_DIR}/user.local.nix"
+    detail "To change the on/off state later, re-run: bash ${ROOT_DIR}/scripts/setup.sh"
 }
 
 print_virtualization_help() {
@@ -1451,8 +1451,8 @@ elif is_interactive; then
             fi
         fi
     else
-        info "Next steps (manual):"
-        echo -e "  1. Edit ${YELLOW}user.nix${NC} if needed."
+        info "Next steps:"
+        echo -e "  1. Re-run ${YELLOW}bash scripts/setup.sh${NC} if you need to change machine-local answers."
         echo -e "  2. Run: ${YELLOW}bash scripts/mn.sh${NC} for the control center."
         echo -e "  3. Or run: ${YELLOW}bash ${FORGE_SCRIPT}${NC} to apply changes directly."
         if [[ "$enable_fingerprint" == "true" ]]; then
