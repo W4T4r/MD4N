@@ -18,6 +18,12 @@
 MD4N is a modular NixOS + Home Manager setup built around Niri, Noctalia, and a script-driven workflow.
 This top-level README is the operator guide: how to install it, regenerate machine-local state, apply changes, and find the detailed documentation for each part of the repository.
 
+## Preview
+
+| Launcher | Settings |
+| --- | --- |
+| [![Launcher](assets/screenshots/launcher-overview.png)](assets/screenshots/launcher-overview.png) | [![Settings](assets/screenshots/settings-overview.png)](assets/screenshots/settings-overview.png) |
+
 ## Before You Start
 
 - This repository targets NixOS on `x86_64-linux`.
@@ -99,6 +105,7 @@ Use these documents when you want the detailed explanation for each area:
 - [Wallpapers](home-manager/Wallpapers/README.md): wallpaper assets bundled with the setup
 - [Scripts](scripts/README.md): install, apply, rollback, and maintenance workflow
 - [Shared Nix Helpers](lib/README.md): how the merged `user` attribute set is built
+- [Documentation Assets](assets/README.md): screenshots and other repository-owned media
 
 ## Important Files
 
