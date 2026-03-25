@@ -118,6 +118,8 @@ Use these documents when you want the detailed explanation for each area:
 - [Scripts](scripts/README.md): install, apply, rollback, and maintenance workflow
 - [Shared Nix Helpers](lib/README.md): how the merged `user` attribute set is built
 - [Documentation Assets](assets/README.md): screenshots and other repository-owned media
+- [Troubleshooting](docs/troubleshooting.md): common install, setup, and apply failures
+- [Third-Party Notices](THIRD_PARTY_NOTICES.md): bundled assets that carry upstream attribution or license requirements
 
 ## Important Files
 
