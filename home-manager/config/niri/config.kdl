@@ -5,7 +5,7 @@
 
 // Split by the wiki's Configuration sections.
 include "input.kdl"
-include "outputs.kdl"
+include "~/.config/md4n/niri/outputs.kdl"
 include "key-bindings.kdl"
 include "layout.kdl"
 include "miscellaneous.kdl"

@@ -510,7 +510,7 @@ EOF
 }
 
 configure_niri_outputs() {
-    local output_file="${dotroot}/home-manager/config/niri/outputs.kdl"
+    local output_file="/home/${username}/.config/md4n/niri/outputs.kdl"
     local output_backup="${output_file}.bak"
     local -a outputs=()
     local -a mode_list=()
@@ -824,10 +824,31 @@ EOF
     fi
 }
 
+write_fish_env_script() {
+    local dotroot=$1
+    local fish_env_file="/home/${username}/.config/md4n/fish/md4n-env.fish"
+    local fish_env_backup="${fish_env_file}.bak"
+
+    mkdir -p "$(dirname "$fish_env_file")"
+
+    if [[ -f "$fish_env_file" ]]; then
+        warn "Creating backup of md4n-env.fish..."
+        cp "$fish_env_file" "$fish_env_backup"
+        detail "Backup path: ${fish_env_backup}"
+    fi
+
+    info "Generating ${fish_env_file}..."
+    cat > "$fish_env_file" <<EOF
+set -gx PATH ${dotroot}/scripts \$HOME/.local/bin \$PATH
+set -gx NIXPKGS_ALLOW_UNFREE 1
+EOF
+    success "Created ${fish_env_file}"
+}
+
 write_niri_browser_script() {
     local username=$1
     local browser=$2
-    local browser_script_file="${dotroot}/home-manager/config/niri/scripts/browser.sh"
+    local browser_script_file="/home/${username}/.config/md4n/niri/browser.sh"
     local browser_script_backup="${browser_script_file}.bak"
 
     mkdir -p "$(dirname "$browser_script_file")"
@@ -1378,8 +1399,8 @@ let
   cfg = "\${homemanager}/config";
   app = "\${homemanager}/applications";
   faceFile = "";
-  niriBrowserScript = "\${dotroot}/home-manager/config/niri/scripts/browser.sh";
-  niriOutputsFile = "\${dotroot}/home-manager/config/niri/outputs.kdl";
+  niriBrowserScript = "\${home}/.config/md4n/niri/browser.sh";
+  niriOutputsFile = "\${home}/.config/md4n/niri/outputs.kdl";
 in
 {
   inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableW4T4rFonts enableBcompare5 enableVesktop enableCava enableGeminiCli enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtualization enableVirtManager enableOllama enableSteam browser gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile niriBrowserScript niriOutputsFile;
@@ -1388,6 +1409,7 @@ EOF
 
 success "Created ${USER_LOCAL_NIX}"
 
+write_fish_env_script "$dotroot"
 write_niri_browser_script "$username" "$browser_choice"
 configure_niri_outputs
 

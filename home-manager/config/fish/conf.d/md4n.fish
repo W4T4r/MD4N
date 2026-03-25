@@ -1,6 +1,12 @@
 set -g fish_greeting ""
-set -gx PATH $HOME/.local/bin $PATH
-set -gx NIXPKGS_ALLOW_UNFREE 1
+
+set -l shared_env_file "$HOME/.config/md4n/fish/md4n-env.fish"
+if test -f "$shared_env_file"
+    source "$shared_env_file"
+else
+    set -gx PATH $HOME/.local/bin $PATH
+    set -gx NIXPKGS_ALLOW_UNFREE 1
+end
 
 eval (direnv hook fish)
 

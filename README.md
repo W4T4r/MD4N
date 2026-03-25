@@ -162,7 +162,7 @@ Use these documents when you want the detailed explanation for each area:
 - Input methods are configured around Fcitx5, with Hazkey and Mozc for Japanese and Rime for Simplified Chinese
 - GNOME is present as a compatibility layer, not as the primary desktop
 - The repository scripts are added to `PATH` through Home Manager
-- Machine-local Niri helpers are generated into the linked `home-manager/config/niri/` directory and appear at `~/.config/niri/`
+- Machine-local Niri helpers live under `~/.config/md4n/niri/`, while the shared `config.kdl` refers to them with absolute paths
 
 ## License
 
