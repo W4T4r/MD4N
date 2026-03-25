@@ -4,6 +4,10 @@ set -gx NIXPKGS_ALLOW_UNFREE 1
 
 eval (direnv hook fish)
 
+if test "$TERM" != "dumb"
+    starship init fish | source
+end
+
 fastfetch
 
 set -l local_conf_dir "$HOME/.config/fish/conf.d/local"

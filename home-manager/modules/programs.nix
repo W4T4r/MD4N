@@ -17,7 +17,6 @@
 
     starship = {
       enable = true;
-      enableFishIntegration = true;
     };
 
     git = {

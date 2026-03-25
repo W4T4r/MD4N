@@ -26,7 +26,7 @@ in {
       inputs.nix-hazkey.homeModules.hazkey
     ]
     ++ (
-      if user.enableCustomFonts or false
+      if (user.enableW4T4rFonts or false) || (user.enableCustomFonts or false)
       then [./modules/fonts.nix]
       else []
     );

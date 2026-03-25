@@ -659,8 +659,8 @@ print_timezone_help() {
 }
 
 print_font_preferences_help() {
-    detail "Custom font preferences only toggle the dedicated font module."
-    detail "You are expected to fine-tune the actual font families later."
+    detail "W4T4r font preferences toggle the dedicated personal font module."
+    detail "This is intentionally a personal override, not a repository-wide default."
     detail "Edit: ${ROOT_DIR}/home-manager/modules/fonts.nix"
     detail "To change the on/off state later, re-run: bash ${ROOT_DIR}/scripts/setup.sh"
 }
@@ -964,7 +964,7 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
         apply_max_profile_defaults
     else
         print_font_preferences_help
-        enable_custom_fonts=$(prompt_bool_with_default "Enable custom font preferences?" "false")
+        enable_custom_fonts=$(prompt_bool_with_default "Enable W4T4r personal font preferences?" "false")
 
         enable_virtualization="true"
         if [[ "$package_profile" != "minimal" ]]; then
@@ -1345,7 +1345,7 @@ let
   gitName = "$(escape_nix_string "$git_name")";
   gitEmail = "$(escape_nix_string "$git_email")";
   packageProfile = "$(escape_nix_string "$package_profile")";
-  enableCustomFonts = $(render_nix_bool "$enable_custom_fonts");
+  enableW4T4rFonts = $(render_nix_bool "$enable_custom_fonts");
   enableBcompare5 = $(render_nix_bool "$enable_bcompare5");
   enableVesktop = $(render_nix_bool "$enable_vesktop");
   enableCava = $(render_nix_bool "$enable_cava");
@@ -1381,7 +1381,7 @@ let
   niriOutputsFile = "\${home}/.local/share/md4n/niri/outputs.kdl";
 in
 {
-  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableCustomFonts enableBcompare5 enableVesktop enableCava enableGeminiCli enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtualization enableVirtManager enableOllama enableSteam browser gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile niriBrowserScript niriOutputsFile;
+  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableW4T4rFonts enableBcompare5 enableVesktop enableCava enableGeminiCli enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtualization enableVirtManager enableOllama enableSteam browser gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile niriBrowserScript niriOutputsFile;
 }
 EOF
 
