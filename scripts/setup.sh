@@ -297,7 +297,7 @@ validate_git_email() {
 }
 
 validate_package_profile() {
-    [[ "$1" == "minimal" || "$1" == "full" || "$1" == "custom" ]]
+    [[ "$1" == "minimal" || "$1" == "full" || "$1" == "custom" || "$1" == "max" ]]
 }
 
 validate_gpu_vendor() {
@@ -328,6 +328,7 @@ print_package_profile_choices() {
     detail "  - minimal : lighter package set"
     detail "  - full    : default workstation profile"
     detail "  - custom  : full base intended for local tailoring"
+    detail "  - max     : author's all-in profile, enables nearly everything"
 }
 
 print_gpu_vendor_choices() {
@@ -343,6 +344,51 @@ print_font_preferences_help() {
     detail "You are expected to fine-tune the actual font families later."
     detail "Edit: ${ROOT_DIR}/home-manager/modules/fonts.nix"
     detail "If you only want to turn the module on or off later, edit: ${ROOT_DIR}/user.local.nix"
+}
+
+print_virtualization_help() {
+    detail "Virtualization environment:"
+    detail "Enables Podman, libvirt, KVM group membership, and related desktop tools."
+    detail "If disabled, virtualization modules and helper packages stay out of the system."
+}
+
+confirm_max_profile() {
+    warn "The 'max' profile is the repository author's personal all-in setup."
+    warn "It enables a large number of packages and settings, including many tools you may never use."
+    read -p "Do you really want to apply the 'max' profile and skip the remaining optional prompts? [y/N] " confirm_max
+
+    if [[ ! "$confirm_max" =~ ^[yY]$ ]]; then
+        info "Max profile cancelled."
+        exit 0
+    fi
+}
+
+apply_max_profile_defaults() {
+    enable_custom_fonts="true"
+    enable_virtualization="true"
+    enable_bcompare5="true"
+    enable_vesktop="true"
+    enable_cava="true"
+    enable_gemini_cli="true"
+    enable_codex="true"
+    enable_claude_code="true"
+    enable_google_chrome="true"
+    enable_thunderbird="true"
+    enable_obs_studio="true"
+    enable_davinci_resolve="true"
+    enable_zotero="true"
+    enable_podman_desktop="true"
+    enable_distrobox="true"
+    enable_distroshelf="true"
+    enable_texlive_full="true"
+    enable_global_protect="true"
+    enable_virt_manager="true"
+    enable_ollama="true"
+    enable_steam="true"
+    gpu_vendor=$(normalize_gpu_vendor "$DEFAULT_GPU_VENDOR")
+    enable_fingerprint="true"
+    enable_dual_boot="true"
+    enable_hibernate="false"
 }
 
 prompt_bool_with_default() {
@@ -372,6 +418,7 @@ prompt_optional_full_packages() {
     detail "You will be asked about packages many users do not need."
 
     enable_bcompare5=$(prompt_bool_with_default "Include Beyond Compare 5 integration?" "true")
+    detail "Google Chrome note: if you sign in with fprintd-based login, Chrome may still ask for your password."
     enable_google_chrome=$(prompt_bool_with_default "Include Google Chrome?" "true")
     enable_thunderbird=$(prompt_bool_with_default "Include Thunderbird?" "true")
     enable_obs_studio=$(prompt_bool_with_default "Include OBS Studio?" "true")
@@ -383,6 +430,41 @@ prompt_optional_full_packages() {
     enable_texlive_full=$(prompt_bool_with_default "Include TeX Live Full?" "true")
     enable_global_protect=$(prompt_bool_with_default "Include GlobalProtect OpenConnect?" "true")
     enable_virt_manager=$(prompt_bool_with_default "Include virt-manager and libvirt helper tools?" "true")
+}
+
+prompt_custom_profile_packages() {
+    detail "Custom profile additions:"
+    detail "You will be asked about apps and services that are outside the minimal baseline."
+
+    enable_bcompare5=$(prompt_bool_with_default "Include Beyond Compare 5 integration?" "true")
+    enable_vesktop=$(prompt_bool_with_default "Include Vesktop?" "true")
+    enable_cava=$(prompt_bool_with_default "Include CAVA?" "true")
+    enable_gemini_cli=$(prompt_bool_with_default "Include Gemini CLI?" "true")
+    enable_codex=$(prompt_bool_with_default "Include Codex?" "true")
+    enable_claude_code=$(prompt_bool_with_default "Include Claude Code?" "true")
+    detail "Google Chrome note: if you sign in with fprintd-based login, Chrome may still ask for your password."
+    enable_google_chrome=$(prompt_bool_with_default "Include Google Chrome?" "true")
+    enable_thunderbird=$(prompt_bool_with_default "Include Thunderbird?" "true")
+    enable_obs_studio=$(prompt_bool_with_default "Include OBS Studio?" "true")
+    enable_davinci_resolve=$(prompt_bool_with_default "Include DaVinci Resolve?" "true")
+    enable_zotero=$(prompt_bool_with_default "Include Zotero?" "true")
+    enable_ollama=$(prompt_bool_with_default "Enable Ollama service?" "true")
+    enable_steam=$(prompt_bool_with_default "Enable Steam?" "true")
+    enable_texlive_full=$(prompt_bool_with_default "Include TeX Live Full?" "true")
+    enable_global_protect=$(prompt_bool_with_default "Include GlobalProtect OpenConnect?" "true")
+
+    if [[ "$enable_virtualization" == "true" ]]; then
+        enable_podman_desktop=$(prompt_bool_with_default "Include Podman Desktop?" "true")
+        enable_distrobox=$(prompt_bool_with_default "Include Distrobox?" "true")
+        enable_distroshelf=$(prompt_bool_with_default "Include Distroshelf?" "true")
+        enable_virt_manager=$(prompt_bool_with_default "Include virt-manager and libvirt helper tools?" "true")
+    else
+        detail "Virtualization environment disabled: skipping Podman, Distrobox, Distroshelf, and virt-manager prompts."
+        enable_podman_desktop="false"
+        enable_distrobox="false"
+        enable_distroshelf="false"
+        enable_virt_manager="false"
+    fi
 }
 
 run_fingerprint_enroll() {
@@ -466,7 +548,7 @@ AUTO_MODE=false
 FIRST_TIME=false
 [[ -f "$USER_LOCAL_NIX" ]] || FIRST_TIME=true
 
-if is_interactive; then
+if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
     echo
     if [[ "$FIRST_TIME" == "true" ]]; then
         warn "This is your first time running the setup."
@@ -478,7 +560,7 @@ if is_interactive; then
         AUTO_MODE=true
         success "Proceeding with automatic setup..."
     else
-        read -p "Would you like to proceed with the automatic setup? (Skips most prompts) [y/N] " auto_confirm
+        read -p "Enable automatic setup? (Skips name/locale/timezone/hostname/Git/GPU/fingerprint/dual-boot prompts, but still asks about profile and optional packages) [y/N] " auto_confirm
         if [[ "$auto_confirm" =~ ^[yY]$ ]]; then
             AUTO_MODE=true
             info "Automatic mode enabled."
@@ -509,20 +591,20 @@ step "Collecting user configuration"
 
 dotroot="$ROOT_DIR"
 
-if is_interactive; then
-    username=$(whoami)
-    DEFAULT_FULLNAME=$(detect_fullname "$username")
-    DEFAULT_LOCALE=$(detect_locale)
-    DEFAULT_TIMEZONE=$(detect_timezone)
-    DEFAULT_HOSTNAME=$(detect_hostname)
-    DEFAULT_GIT_NAME=$(detect_git_config user.name)
-    DEFAULT_GIT_EMAIL=$(detect_git_config user.email)
-    DEFAULT_GPU_VENDOR=$(detect_gpu_vendor)
+username=$(whoami)
+DEFAULT_FULLNAME=$(detect_fullname "$username")
+DEFAULT_LOCALE=$(detect_locale)
+DEFAULT_TIMEZONE=$(detect_timezone)
+DEFAULT_HOSTNAME=$(detect_hostname)
+DEFAULT_GIT_NAME=$(detect_git_config user.name)
+DEFAULT_GIT_EMAIL=$(detect_git_config user.email)
+DEFAULT_GPU_VENDOR=$(detect_gpu_vendor)
 
-    if [[ -z "$DEFAULT_GIT_NAME" ]]; then
-        DEFAULT_GIT_NAME=$DEFAULT_FULLNAME
-    fi
+if [[ -z "$DEFAULT_GIT_NAME" ]]; then
+    DEFAULT_GIT_NAME=$DEFAULT_FULLNAME
+fi
 
+if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
     info "Detected username: ${GREEN}${username}${NC}"
 
     read -p "Enter your full name [$DEFAULT_FULLNAME]: " fullname
@@ -571,55 +653,118 @@ if is_interactive; then
         error "Invalid package profile: $package_profile"
     fi
 
-    print_font_preferences_help
-    enable_custom_fonts=$(prompt_bool_with_default "Enable custom font preferences?" "false")
-
-    enable_bcompare5="true"
-    enable_google_chrome="true"
-    enable_thunderbird="true"
-    enable_obs_studio="true"
-    enable_davinci_resolve="true"
-    enable_zotero="true"
-    enable_podman_desktop="true"
-    enable_distrobox="true"
-    enable_distroshelf="true"
-    enable_texlive_full="true"
-    enable_global_protect="true"
-    enable_virt_manager="true"
-
-    if [[ "$package_profile" == "full" ]]; then
-        prompt_optional_full_packages
-    fi
-
-    print_gpu_vendor_choices
-    read -p "Enter your GPU vendor [$DEFAULT_GPU_VENDOR]: " gpu_vendor
-    gpu_vendor=${gpu_vendor:-$DEFAULT_GPU_VENDOR}
-    gpu_vendor=$(normalize_gpu_vendor "$gpu_vendor")
-
-    if ! validate_gpu_vendor "$gpu_vendor"; then
-        error "Invalid GPU vendor: $gpu_vendor"
-    fi
-
-    read -p "Enable fingerprint authentication? [y/N] " enable_fingerprint_confirm
-    if [[ "$enable_fingerprint_confirm" =~ ^[yY]$ ]]; then
-        enable_fingerprint="true"
-        detail "Fingerprint enrollment command: fprintd-enroll ${username}"
+    if [[ "$package_profile" == "max" ]]; then
+        confirm_max_profile
+        apply_max_profile_defaults
     else
-        enable_fingerprint="false"
-    fi
+        print_font_preferences_help
+        enable_custom_fonts=$(prompt_bool_with_default "Enable custom font preferences?" "false")
 
-    read -p "Enable dual-boot support (GRUB os-prober)? [y/N] " enable_dual_boot_confirm
-    if [[ "$enable_dual_boot_confirm" =~ ^[yY]$ ]]; then
-        enable_dual_boot="true"
-        enable_hibernate="false"
-        info "Dual-boot support enabled. Hibernate is forced off to avoid resume conflicts."
-    else
-        enable_dual_boot="false"
-        read -p "Enable hibernate and hybrid-sleep? [y/N] " enable_hibernate_confirm
-        if [[ "$enable_hibernate_confirm" =~ ^[yY]$ ]]; then
-            enable_hibernate="true"
+        enable_virtualization="true"
+        if [[ "$package_profile" != "minimal" ]]; then
+            print_virtualization_help
+            enable_virtualization=$(prompt_bool_with_default "Enable virtualization environment?" "true")
+        fi
+
+        enable_bcompare5="true"
+        enable_vesktop="true"
+        enable_cava="true"
+        enable_gemini_cli="true"
+        enable_codex="true"
+        enable_claude_code="true"
+        enable_google_chrome="true"
+        enable_thunderbird="true"
+        enable_obs_studio="true"
+        enable_davinci_resolve="true"
+        enable_zotero="true"
+        enable_podman_desktop="true"
+        enable_distrobox="true"
+        enable_distroshelf="true"
+        enable_texlive_full="true"
+        enable_global_protect="true"
+        enable_virt_manager="true"
+        enable_ollama="true"
+        enable_steam="true"
+
+        if [[ "$package_profile" == "full" ]]; then
+            if [[ "$enable_virtualization" == "true" ]]; then
+                prompt_optional_full_packages
+            else
+                detail "Virtualization environment disabled: skipping Podman, Distrobox, Distroshelf, and virt-manager prompts."
+                enable_bcompare5=$(prompt_bool_with_default "Include Beyond Compare 5 integration?" "true")
+                detail "Google Chrome note: if you sign in with fprintd-based login, Chrome may still ask for your password."
+                enable_google_chrome=$(prompt_bool_with_default "Include Google Chrome?" "true")
+                enable_thunderbird=$(prompt_bool_with_default "Include Thunderbird?" "true")
+                enable_obs_studio=$(prompt_bool_with_default "Include OBS Studio?" "true")
+                enable_davinci_resolve=$(prompt_bool_with_default "Include DaVinci Resolve?" "true")
+                enable_zotero=$(prompt_bool_with_default "Include Zotero?" "true")
+                enable_texlive_full=$(prompt_bool_with_default "Include TeX Live Full?" "true")
+                enable_global_protect=$(prompt_bool_with_default "Include GlobalProtect OpenConnect?" "true")
+                enable_podman_desktop="false"
+                enable_distrobox="false"
+                enable_distroshelf="false"
+                enable_virt_manager="false"
+            fi
+        elif [[ "$package_profile" == "custom" ]]; then
+            prompt_custom_profile_packages
+        elif [[ "$package_profile" == "minimal" ]]; then
+            enable_bcompare5="false"
+            enable_vesktop="false"
+            enable_cava="false"
+            enable_gemini_cli="false"
+            enable_codex="false"
+            enable_claude_code="false"
+            enable_google_chrome="false"
+            enable_thunderbird="false"
+            enable_obs_studio="false"
+            enable_davinci_resolve="false"
+            enable_zotero="false"
+            enable_podman_desktop="false"
+            enable_distrobox="false"
+            enable_distroshelf="false"
+            enable_texlive_full="false"
+            enable_global_protect="false"
+            enable_virtualization="false"
+            enable_virt_manager="false"
+            enable_ollama="false"
+            enable_steam="false"
+        elif [[ "$enable_virtualization" != "true" ]]; then
+            enable_podman_desktop="false"
+            enable_distrobox="false"
+            enable_distroshelf="false"
+            enable_virt_manager="false"
+        fi
+
+        print_gpu_vendor_choices
+        read -p "Enter your GPU vendor [$DEFAULT_GPU_VENDOR]: " gpu_vendor
+        gpu_vendor=${gpu_vendor:-$DEFAULT_GPU_VENDOR}
+        gpu_vendor=$(normalize_gpu_vendor "$gpu_vendor")
+
+        if ! validate_gpu_vendor "$gpu_vendor"; then
+            error "Invalid GPU vendor: $gpu_vendor"
+        fi
+
+        read -p "Enable fingerprint authentication? [y/N] " enable_fingerprint_confirm
+        if [[ "$enable_fingerprint_confirm" =~ ^[yY]$ ]]; then
+            enable_fingerprint="true"
+            detail "Fingerprint enrollment command: fprintd-enroll ${username}"
         else
+            enable_fingerprint="false"
+        fi
+
+        read -p "Enable dual-boot support (GRUB os-prober)? [y/N] " enable_dual_boot_confirm
+        if [[ "$enable_dual_boot_confirm" =~ ^[yY]$ ]]; then
+            enable_dual_boot="true"
             enable_hibernate="false"
+            info "Dual-boot support enabled. Hibernate is forced off to avoid resume conflicts."
+        else
+            enable_dual_boot="false"
+            read -p "Enable hibernate and hybrid-sleep? [y/N] " enable_hibernate_confirm
+            if [[ "$enable_hibernate_confirm" =~ ^[yY]$ ]]; then
+                enable_hibernate="true"
+            else
+                enable_hibernate="false"
+            fi
         fi
     fi
 
@@ -635,6 +780,11 @@ if is_interactive; then
     detail "Profile  : ${package_profile}"
     detail "Fonts    : ${enable_custom_fonts}"
     detail "BCompare : ${enable_bcompare5}"
+    detail "Vesktop  : ${enable_vesktop}"
+    detail "CAVA     : ${enable_cava}"
+    detail "Gemini   : ${enable_gemini_cli}"
+    detail "Codex    : ${enable_codex}"
+    detail "Claude   : ${enable_claude_code}"
     detail "Chrome   : ${enable_google_chrome}"
     detail "Mail     : ${enable_thunderbird}"
     detail "OBS      : ${enable_obs_studio}"
@@ -645,29 +795,47 @@ if is_interactive; then
     detail "Shelf    : ${enable_distroshelf}"
     detail "TeX Live : ${enable_texlive_full}"
     detail "GP VPN   : ${enable_global_protect}"
+    detail "Virtual  : ${enable_virtualization}"
     detail "Virt Mgr : ${enable_virt_manager}"
+    detail "Ollama   : ${enable_ollama}"
+    detail "Steam    : ${enable_steam}"
     detail "GPU      : ${gpu_vendor}"
     detail "Fingerprint: ${enable_fingerprint}"
     detail "Dualboot : ${enable_dual_boot}"
     detail "Hibernate: ${enable_hibernate}"
     detail "Dotfiles : ${dotroot}"
 else
-    # Non-interactive defaults
-    username=$(whoami)
-    fullname=$(detect_fullname "$username")
-    locale_value=$(detect_locale)
-    timezone_value=$(detect_timezone)
-    hostname_value=$(detect_hostname)
-    git_name=$(detect_git_config user.name)
-    git_email=$(detect_git_config user.email)
+    # Automatic or non-interactive defaults
+    if [[ "$AUTO_MODE" == "true" ]]; then
+        info "Automatic mode: using detected values and repository defaults."
+        print_package_profile_choices
+        read -p "Select your package profile [full]: " package_profile
+        package_profile=${package_profile:-full}
 
-    if [[ -z "$git_name" ]]; then
-        git_name=$fullname
+        if ! validate_package_profile "$package_profile"; then
+            error "Invalid package profile: $package_profile"
+        fi
+
+        if [[ "$package_profile" == "max" ]]; then
+            confirm_max_profile
+        fi
+    else
+        package_profile="full"
     fi
 
-    package_profile="full"
+    fullname=$DEFAULT_FULLNAME
+    locale_value=$DEFAULT_LOCALE
+    timezone_value=$DEFAULT_TIMEZONE
+    hostname_value=$DEFAULT_HOSTNAME
+    git_name=${DEFAULT_GIT_NAME:-$DEFAULT_FULLNAME}
+    git_email=$DEFAULT_GIT_EMAIL
     enable_custom_fonts="false"
     enable_bcompare5="true"
+    enable_vesktop="true"
+    enable_cava="true"
+    enable_gemini_cli="true"
+    enable_codex="true"
+    enable_claude_code="true"
     enable_google_chrome="true"
     enable_thunderbird="true"
     enable_obs_studio="true"
@@ -678,11 +846,62 @@ else
     enable_distroshelf="true"
     enable_texlive_full="true"
     enable_global_protect="true"
+    enable_virtualization="true"
     enable_virt_manager="true"
-    gpu_vendor=$(normalize_gpu_vendor "$(detect_gpu_vendor)")
+    enable_ollama="true"
+    enable_steam="true"
+    gpu_vendor=$(normalize_gpu_vendor "$DEFAULT_GPU_VENDOR")
     enable_fingerprint="false"
     enable_dual_boot="false"
     enable_hibernate="false"
+
+    if [[ "$package_profile" == "minimal" ]]; then
+        enable_bcompare5="false"
+        enable_vesktop="false"
+        enable_cava="false"
+        enable_gemini_cli="false"
+        enable_codex="false"
+        enable_claude_code="false"
+        enable_google_chrome="false"
+        enable_thunderbird="false"
+        enable_obs_studio="false"
+        enable_davinci_resolve="false"
+        enable_zotero="false"
+        enable_virtualization="false"
+        enable_podman_desktop="false"
+        enable_distrobox="false"
+        enable_distroshelf="false"
+        enable_virt_manager="false"
+        enable_texlive_full="false"
+        enable_global_protect="false"
+        enable_ollama="false"
+        enable_steam="false"
+    elif [[ "$AUTO_MODE" == "true" && "$package_profile" != "max" ]]; then
+        print_virtualization_help
+        enable_virtualization=$(prompt_bool_with_default "Enable virtualization environment?" "true")
+
+        if [[ "$enable_virtualization" != "true" ]]; then
+            enable_podman_desktop="false"
+            enable_distrobox="false"
+            enable_distroshelf="false"
+            enable_virt_manager="false"
+        fi
+
+        if [[ "$package_profile" == "full" ]]; then
+            prompt_optional_full_packages
+
+            if [[ "$enable_virtualization" != "true" ]]; then
+                enable_podman_desktop="false"
+                enable_distrobox="false"
+                enable_distroshelf="false"
+                enable_virt_manager="false"
+            fi
+        elif [[ "$package_profile" == "custom" ]]; then
+            prompt_custom_profile_packages
+        fi
+    elif [[ "$package_profile" == "max" ]]; then
+        apply_max_profile_defaults
+    fi
 fi
 
 if ! validate_bool_string "$enable_fingerprint"; then
@@ -691,6 +910,26 @@ fi
 
 if ! validate_bool_string "$enable_bcompare5"; then
     error "Invalid Beyond Compare flag: $enable_bcompare5"
+fi
+
+if ! validate_bool_string "$enable_vesktop"; then
+    error "Invalid Vesktop flag: $enable_vesktop"
+fi
+
+if ! validate_bool_string "$enable_cava"; then
+    error "Invalid CAVA flag: $enable_cava"
+fi
+
+if ! validate_bool_string "$enable_gemini_cli"; then
+    error "Invalid Gemini CLI flag: $enable_gemini_cli"
+fi
+
+if ! validate_bool_string "$enable_codex"; then
+    error "Invalid Codex flag: $enable_codex"
+fi
+
+if ! validate_bool_string "$enable_claude_code"; then
+    error "Invalid Claude Code flag: $enable_claude_code"
 fi
 
 if ! validate_bool_string "$enable_google_chrome"; then
@@ -733,8 +972,20 @@ if ! validate_bool_string "$enable_global_protect"; then
     error "Invalid GlobalProtect flag: $enable_global_protect"
 fi
 
+if ! validate_bool_string "$enable_virtualization"; then
+    error "Invalid virtualization flag: $enable_virtualization"
+fi
+
 if ! validate_bool_string "$enable_virt_manager"; then
     error "Invalid virt-manager flag: $enable_virt_manager"
+fi
+
+if ! validate_bool_string "$enable_ollama"; then
+    error "Invalid Ollama flag: $enable_ollama"
+fi
+
+if ! validate_bool_string "$enable_steam"; then
+    error "Invalid Steam flag: $enable_steam"
 fi
 
 if ! validate_bool_string "$enable_dual_boot"; then
@@ -774,6 +1025,11 @@ let
   packageProfile = "$(escape_nix_string "$package_profile")";
   enableCustomFonts = $(render_nix_bool "$enable_custom_fonts");
   enableBcompare5 = $(render_nix_bool "$enable_bcompare5");
+  enableVesktop = $(render_nix_bool "$enable_vesktop");
+  enableCava = $(render_nix_bool "$enable_cava");
+  enableGeminiCli = $(render_nix_bool "$enable_gemini_cli");
+  enableCodex = $(render_nix_bool "$enable_codex");
+  enableClaudeCode = $(render_nix_bool "$enable_claude_code");
   enableGoogleChrome = $(render_nix_bool "$enable_google_chrome");
   enableThunderbird = $(render_nix_bool "$enable_thunderbird");
   enableObsStudio = $(render_nix_bool "$enable_obs_studio");
@@ -784,7 +1040,10 @@ let
   enableDistroshelf = $(render_nix_bool "$enable_distroshelf");
   enableTexliveFull = $(render_nix_bool "$enable_texlive_full");
   enableGlobalProtect = $(render_nix_bool "$enable_global_protect");
+  enableVirtualization = $(render_nix_bool "$enable_virtualization");
   enableVirtManager = $(render_nix_bool "$enable_virt_manager");
+  enableOllama = $(render_nix_bool "$enable_ollama");
+  enableSteam = $(render_nix_bool "$enable_steam");
   gpuVendor = "$(escape_nix_string "$gpu_vendor")";
   enableFingerprint = $(render_nix_bool "$enable_fingerprint");
   enableDualBoot = $(render_nix_bool "$enable_dual_boot");
@@ -796,7 +1055,7 @@ let
   app = "\${homemanager}/applications";
 in
 {
-  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableCustomFonts enableBcompare5 enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtManager gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app;
+  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableCustomFonts enableBcompare5 enableVesktop enableCava enableGeminiCli enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtualization enableVirtManager enableOllama enableSteam gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app;
 }
 EOF
 
@@ -845,7 +1104,14 @@ step "Final step"
 detail "You can manage your system with mn.sh or forge.sh."
 
 if [[ "$AUTO_MODE" == "true" ]]; then
-    info "Automatic mode: Applying configuration..."
+    info "Automatic mode: Applying configuration with the detected/default setup."
+    detail "NixOS target : ${hostname_value}"
+    detail "Home target  : ${username}"
+    detail "Profile      : ${package_profile}"
+    detail "Virtual      : ${enable_virtualization}"
+    detail "Fingerprint  : ${enable_fingerprint}"
+    detail "This will run: sudo nixos-rebuild switch --flake path:${ROOT_DIR}#${hostname_value}"
+    detail "Then it will run: home-manager switch -b md4nbak --flake path:${ROOT_DIR}#${username}"
     
     # Refresh sudo credentials
     sudo -v
@@ -861,7 +1127,9 @@ if [[ "$AUTO_MODE" == "true" ]]; then
     success "Configuration applied successfully."
 
     if is_interactive && [[ "$enable_fingerprint" == "true" ]]; then
-        read -p "Fingerprint authentication is enabled. Enroll a fingerprint now? [y/N] " enroll_fingerprint_now
+        info "Fingerprint authentication is enabled in the generated configuration."
+        detail "If you continue, setup will launch: fprintd-enroll ${username}"
+        read -p "Enroll a fingerprint now? [y/N] " enroll_fingerprint_now
         if [[ "$enroll_fingerprint_now" =~ ^[yY]$ ]]; then
             run_fingerprint_enroll "$username" || warn "Fingerprint enrollment did not complete. You can retry later with: fprintd-enroll ${username}"
         fi
@@ -874,7 +1142,9 @@ elif is_interactive; then
         bash "$FORGE_SCRIPT"
 
         if [[ "$enable_fingerprint" == "true" ]]; then
-            read -p "Fingerprint authentication is enabled. Enroll a fingerprint now? [y/N] " enroll_fingerprint_now
+            info "Fingerprint authentication is enabled in the generated configuration."
+            detail "If you continue, setup will launch: fprintd-enroll ${username}"
+            read -p "Enroll a fingerprint now? [y/N] " enroll_fingerprint_now
             if [[ "$enroll_fingerprint_now" =~ ^[yY]$ ]]; then
                 run_fingerprint_enroll "$username" || warn "Fingerprint enrollment did not complete. You can retry later with: fprintd-enroll ${username}"
             fi

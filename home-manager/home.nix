@@ -10,7 +10,7 @@
 let
   packageProfile = user.packageProfile or "full";
   packageModule =
-    if builtins.elem packageProfile [ "minimal" "full" "custom" ] then
+    if builtins.elem packageProfile [ "minimal" "full" "custom" "max" ] then
       ./modules/packages + "/${packageProfile}.nix"
     else
       throw "Unsupported package profile '${packageProfile}' in user.nix";

@@ -10,6 +10,7 @@
 
 let
   packageProfile = user.packageProfile or "full";
+  virtualizationEnabled = (user.enableVirtualization or true) && packageProfile != "minimal";
 in
 {
   imports =
@@ -21,5 +22,5 @@ in
       ./modules/services.nix
       ./modules/packages.nix
     ]
-    ++ (if packageProfile == "minimal" then [ ] else [ ./modules/virtualization.nix ]);
+    ++ (if virtualizationEnabled then [ ./modules/virtualization.nix ] else [ ]);
 }

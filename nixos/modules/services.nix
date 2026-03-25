@@ -10,7 +10,7 @@
   services.input-remapper.enable = true;
 
   services.ollama = {
-    enable = true;
+    enable = user.enableOllama or false;
     package =
       if (user.gpuVendor or "generic") == "amd" then
         pkgs.ollama-rocm
@@ -19,7 +19,7 @@
   };
 
   programs.steam = {
-    enable = true;
+    enable = user.enableSteam or false;
     remotePlay.openFirewall = true;
     dedicatedServer.openFirewall = true;
   };

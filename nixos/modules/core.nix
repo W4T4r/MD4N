@@ -3,8 +3,9 @@
 let
   dualBootEnabled = user.enableDualBoot or false;
   hibernateEnabled = (user.enableHibernate or false) && !dualBootEnabled;
+  virtualizationEnabled = (user.enableVirtualization or true) && (user.packageProfile or "full") != "minimal";
   virtualizationGroups =
-    if (user.packageProfile or "full") == "minimal" then
+    if !virtualizationEnabled then
       [ ]
     else
       [ "podman" "libvirtd" "kvm" ];

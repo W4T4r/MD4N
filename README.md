@@ -23,9 +23,9 @@
 
 - 🌌 **Niri WM**: A Wayland-first setup built around Niri and Noctalia Shell.
 - 🧩 **Modular Layout**: `configuration.nix` and `home.nix` stay as stable entrypoints while internal modules split system, services, programs, fonts, and package profiles.
-- 👤 **Private Local Overrides**: Setup writes hostname, locale, timezone, Git identity, package profile, GPU vendor, dual-boot support, hibernate preference, and optional personal font settings into `user.local.nix`, which stays out of Git.
-- 📦 **Profile-Aware Packages**: `minimal`, `full`, and `custom` profiles are selected in setup and loaded internally by Home Manager and NixOS modules.
-- 🎛️ **Selective Full Profile**: Even in the `full` profile, setup can ask about less-common packages one by one so they are not installed blindly.
+- 👤 **Private Local Overrides**: Setup writes hostname, locale, timezone, Git identity, package profile, virtualization preference, GPU vendor, dual-boot support, hibernate preference, and optional personal font settings into `user.local.nix`, which stays out of Git.
+- 📦 **Profile-Aware Packages**: `minimal`, `full`, `custom`, and `max` profiles are selected in setup and loaded internally by Home Manager and NixOS modules.
+- 🎛️ **Guided Package Selection**: `full` asks about less-common apps one by one, `custom` asks one by one about everything outside the minimal baseline, and `max` applies the author's all-in preset after an explicit confirmation.
 - 🖥️ **GPU-Aware Defaults**: AMD systems use ROCm variants such as `btop-rocm` and `ollama-rocm`; other systems fall back to the generic packages.
 - ⌨️ **Japanese Input Ready**: Fcitx5 is configured with both Hazkey and Mozc.
 - 📁 **Dual File Tools**: Nemo is the graphical file manager, while Yazi covers terminal workflows.
@@ -45,7 +45,7 @@
 | **File Manager** | Nemo + Yazi |
 | **Editor** | Neovim ([NvChad](https://nvchad.com/) via Nix4NvChad) |
 | **Input Method** | Fcitx5 (Hazkey / Mozc) |
-| **Virtualization** | Podman, Libvirt, Distrobox (`full` / `custom`) |
+| **Virtualization** | Podman, Libvirt, Distrobox (`full` / `custom` / `max`) |
 | **AI / Dev Tools** | Codex, Claude Code, Gemini CLI |
 
 ---
@@ -56,16 +56,19 @@ MD4N keeps the flake entrypoints stable and separates shared defaults from local
 
 - **`flake.nix`**: Always points at [nixos/configuration.nix](/home/donghang/Documents/MD4N/nixos/configuration.nix) and [home-manager/home.nix](/home/donghang/Documents/MD4N/home-manager/home.nix).
 - **`user.nix`**: Repository-safe defaults that can be shared publicly.
-- **`user.local.nix`**: Generated during setup. It stores username, full name, hostname, locale, timezone, Git name/email, package profile, custom-font opt-in, GPU vendor, dual-boot support, hibernate preference, and derived paths.
-- **`nixos/`**: System-level modules for core settings, boot, desktop, services, packages, and conditional virtualization support.
+- **`user.local.nix`**: Generated during setup. It stores username, full name, hostname, locale, timezone, Git name/email, package profile, custom-font opt-in, virtualization preference, GPU vendor, dual-boot support, hibernate preference, and derived paths.
+- **`nixos/`**: System-level modules for core settings, boot, desktop, services, packages, and virtualization support that can be toggled in setup.
 - **`home-manager/`**: User-level modules for core dotfiles, programs, services, optional fonts, and profile-specific package sets.
 - **`scripts/`**: Interactive bash consoles and bootstrap helpers that wrap common Nix operations.
 
 The package profile affects both layers:
 
-- **`minimal`**: Lighter package set, no virtualization module import, no `texliveFull`, and no `globalprotect-openconnect`.
-- **`full`**: Default workstation profile.
-- **`custom`**: Starts from the full Home Manager package set and is intended for local tailoring.
+- **`minimal`**: Lighter package set. Virtualization is off, `texliveFull` and `globalprotect-openconnect` stay out, and the extra desktop/dev tools are disabled.
+- **`full`**: Default workstation profile. Uses the fuller package set and asks about less-common apps individually.
+- **`custom`**: Starts from the minimal baseline and asks one by one about the extra apps and services from the fuller profiles, including optional virtualization helpers.
+- **`max`**: The repository author's personal all-in profile. It enables the broad package and service set after an explicit confirmation and should be assumed to include many tools you probably do not need.
+
+Virtualization can still be disabled independently during setup for non-`minimal` profiles.
 
 ---
 
@@ -87,23 +90,29 @@ The install flow is:
 3. `scripts/setup.sh`: generates or updates `user.local.nix`, writes the Fish PATH helper, and can run in automatic or guided mode.
 4. `scripts/forge.sh`: applies the resulting NixOS and/or Home Manager configuration.
 
-During setup, MD4N can prompt for:
+During setup, MD4N can run in either guided mode or automatic mode.
 
-- Full name
-- Locale
-- Time zone
-- Hostname
-- Git author name and email
-- Package profile: `minimal`, `full`, or `custom`
-- Custom font preferences opt-in
-- Font customization note: enabling custom fonts only turns on the font module; edit `/home/donghang/Documents/MD4N/home-manager/modules/fonts.nix` to tune the actual font families, or `/home/donghang/Documents/MD4N/user.local.nix` to toggle the module later
-- Full profile optional packages: setup can ask one by one about less-common packages such as Beyond Compare 5, DaVinci Resolve, Zotero, Podman Desktop, TeX Live Full, GlobalProtect, and virt-manager
-- GPU vendor: `amd`, `nvidia`, `intel`, or `generic`
-- GPU auto-detection prefers `/sys/class/drm` PCI vendor IDs and falls back to `lspci`; if needed you can still override it manually during setup
-- Fingerprint authentication: optional; when enabled, setup can immediately launch `fprintd-enroll <username>` after applying the configuration
-- When setup dependencies such as `git` or `lspci` are missing from `PATH`, the script can fall back to temporary `nix shell` commands when `nix` is available
-- Dual-boot support: enables GRUB `os-prober`
-- Hibernate / hybrid-sleep opt-in: available only when dual-boot support is off
+- **Guided mode** asks for the full machine/user configuration:
+  Full name, locale, time zone, hostname, Git author name/email, package profile, custom font preferences, virtualization preference, GPU vendor, fingerprint auth, dual-boot support, and hibernate preference.
+- **Automatic mode** skips the identity and machine-detail prompts:
+  It uses detected/default values for full name, locale, time zone, hostname, Git identity, GPU vendor, fingerprint auth, and dual-boot/hibernate.
+  It still asks about the package profile, virtualization, and profile-specific optional packages.
+- **`full` profile prompts**:
+  Beyond Compare 5, Google Chrome, Thunderbird, OBS Studio, DaVinci Resolve, Zotero, Podman Desktop, Distrobox, Distroshelf, TeX Live Full, GlobalProtect OpenConnect, and virt-manager.
+- **`custom` profile prompts**:
+  Beyond Compare 5, Vesktop, CAVA, Gemini CLI, Codex, Claude Code, Google Chrome, Thunderbird, OBS Studio, DaVinci Resolve, Zotero, Ollama, Steam, TeX Live Full, GlobalProtect OpenConnect, and virtualization helpers.
+- **`max` profile behavior**:
+  Setup asks for explicit confirmation because it is the author's personal setup, then enables the broad package/service set and skips the remaining optional package prompts.
+- **Virtualization note**:
+  Podman/Desktop, Distrobox, Distroshelf, and virt-manager prompts are skipped automatically when virtualization is disabled.
+- **Google Chrome note**:
+  When you log in with `fprintd`, Chrome may still ask for your password in some cases.
+- **GPU detection**:
+  Auto-detection prefers `/sys/class/drm` PCI vendor IDs and falls back to `lspci`; you can still override it manually in guided mode.
+- **Fingerprint note**:
+  When fingerprint authentication is enabled, setup can launch `fprintd-enroll <username>` after applying the configuration.
+- **Dependency fallback**:
+  When setup dependencies such as `git` or `lspci` are missing from `PATH`, the script can fall back to temporary `nix shell` commands when `nix` is available.
 
 ---
 
