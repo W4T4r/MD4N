@@ -23,7 +23,7 @@
 
 - 🌌 **Niri WM**: A Wayland-first setup built around Niri and Noctalia Shell.
 - 🧩 **Modular Layout**: `configuration.nix` and `home.nix` stay as stable entrypoints while internal modules split system, services, programs, fonts, and package profiles.
-- 👤 **Private Local Overrides**: Setup writes hostname, locale, timezone, Git identity, package profile, virtualization preference, GPU vendor, dual-boot support, hibernate preference, and optional personal font settings into `user.local.nix`, which stays out of Git.
+- 👤 **Private Local Overrides**: Setup writes hostname, locale, timezone, Git identity, package profile, virtualization preference, GPU vendor, dual-boot support, hibernate preference, browser preference, and optional personal paths into `user.local.nix`, which stays out of Git.
 - 📦 **Profile-Aware Packages**: `minimal`, `full`, `custom`, and `max` profiles are selected in setup and loaded internally by Home Manager and NixOS modules.
 - 🎛️ **Guided Package Selection**: `full` asks about less-common apps one by one, `custom` asks one by one about everything outside the minimal baseline, and `max` applies the author's all-in preset after an explicit confirmation.
 - 🖥️ **GPU-Aware Defaults**: AMD systems use ROCm variants such as `btop-rocm` and `ollama-rocm`; other systems fall back to the generic packages.
@@ -56,10 +56,12 @@ MD4N keeps the flake entrypoints stable and separates shared defaults from local
 
 - **`flake.nix`**: Always points at [nixos/configuration.nix](/home/donghang/Documents/MD4N/nixos/configuration.nix) and [home-manager/home.nix](/home/donghang/Documents/MD4N/home-manager/home.nix).
 - **`user.nix`**: Repository-safe defaults that can be shared publicly.
-- **`user.local.nix`**: Generated during setup. It stores username, full name, hostname, locale, timezone, Git name/email, package profile, custom-font opt-in, virtualization preference, GPU vendor, dual-boot support, hibernate preference, and derived paths.
+- **`user.local.nix`**: Generated during setup. It stores username, full name, hostname, locale, timezone, Git name/email, package profile, custom-font opt-in, virtualization preference, GPU vendor, dual-boot support, hibernate preference, browser preference, and derived paths.
 - **`nixos/`**: System-level modules for core settings, boot, desktop, services, packages, and virtualization support that can be toggled in setup.
 - **`home-manager/`**: User-level modules for core dotfiles, programs, services, optional fonts, and profile-specific package sets.
 - **`scripts/`**: Interactive bash consoles and bootstrap helpers that wrap common Nix operations.
+
+Machine-specific runtime files are intentionally kept out of the repository. `setup.sh` generates local files such as Niri output settings and the browser launcher under `~/.local/share/md4n/`, while Home Manager links them into place.
 
 The package profile affects both layers:
 
@@ -84,10 +86,12 @@ cd MD4N
 bash install.sh
 ```
 
+If you plan to customize this setup for yourself, fork it first. The repository is designed so shared defaults stay in Git, while machine-specific state lives in `user.local.nix` and `~/.local/share/md4n/`.
+
 The install flow is:
 1. `install.sh`: entrypoint and cleanup.
 2. `scripts/bootstrap.sh`: verifies `bash`, `sudo`, and `nix`, and enables `nix-command` / `flakes` if needed.
-3. `scripts/setup.sh`: generates or updates `user.local.nix`, writes the Fish PATH helper, and can run in automatic or guided mode.
+3. `scripts/setup.sh`: generates or updates `user.local.nix`, generates machine-local helper files such as Niri output settings and the browser launcher, and can run in automatic or guided mode.
 4. `scripts/forge.sh`: applies the resulting NixOS and/or Home Manager configuration.
 
 During setup, MD4N can run in either guided mode or automatic mode.
@@ -113,6 +117,10 @@ During setup, MD4N can run in either guided mode or automatic mode.
   When fingerprint authentication is enabled, setup can launch `fprintd-enroll <username>` after applying the configuration.
 - **Dependency fallback**:
   When setup dependencies such as `git` or `lspci` are missing from `PATH`, the script can fall back to temporary `nix shell` commands when `nix` is available.
+- **Machine-local desktop files**:
+  Setup detects outputs with `modetest`, writes `outputs.kdl` to `~/.local/share/md4n/niri/outputs.kdl`, and generates `browser.sh` under `~/.local/share/md4n/niri/`.
+- **Flake invocation note**:
+  For real machines, prefer `path:/absolute/path/to/MD4N#<name>` over `.#<name>` so local files such as `user.local.nix` are included in evaluation.
 
 ---
 
@@ -139,6 +147,13 @@ forge.sh [options]
 - `--update`: Update `flake.lock` before applying.
 - `--no-backup`: Disable the `md4nbak` backup suffix for Home Manager.
 
+Examples:
+
+```bash
+sudo nixos-rebuild switch --flake path:/absolute/path/to/MD4N#nixos
+home-manager switch -b md4nbak --flake path:/absolute/path/to/MD4N#your-user
+```
+
 ### ⏪ `rollback.sh` - The Rollback Tool
 Interactively switch to an earlier NixOS or Home Manager generation.
 
@@ -164,7 +179,7 @@ tune.sh
 These are usually called by `install.sh`, but can also be run directly during debugging or iterative setup work.
 
 - `bootstrap.sh`: Ensures Nix prerequisites and launches setup.
-- `setup.sh`: Regenerates `user.local.nix` and the Fish PATH helper, and can optionally call `forge.sh` at the end.
+- `setup.sh`: Regenerates `user.local.nix`, rewrites machine-local desktop helper files, and can optionally call `forge.sh` at the end.
 
 ---
 
@@ -194,7 +209,8 @@ These are usually called by `install.sh`, but can also be run directly during de
 - **Target**: Currently wired for `x86_64-linux`.
 - **Display**: Wayland-first desktop built around Niri.
 - **Fonts**: Personal font choices are opt-in and intentionally separated from the shared baseline.
-- **Scripts**: `setup.sh` writes [home-manager/config/fish/conf.d/md4n-env.fish](/home/donghang/Documents/MD4N/home-manager/config/fish/conf.d/md4n-env.fish) so the repository's `scripts/` directory is added to Fish `PATH`.
+- **GNOME**: Included for the highest calling of modern desktop software: babysitting HHKB Bluetooth setup, and then politely getting out of the way.
+- **Scripts**: The repository's `scripts/` directory is added to `PATH` through Home Manager, while machine-local launch helpers are generated under `~/.local/share/md4n/`.
 
 ## 📄 License
 
