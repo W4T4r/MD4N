@@ -8,3 +8,12 @@ fastfetch
 if test "$TERM" != "dumb"
     starship init fish | source
 end
+
+set -l local_conf_dir "$HOME/.config/fish/conf.d/local"
+if test -d "$local_conf_dir"
+    for file in $local_conf_dir/*.fish
+        if test -f "$file"
+            source "$file"
+        end
+    end
+end

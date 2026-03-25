@@ -1,0 +1,1 @@
+/nix/store/3ydif4r0dzsw6am5354ml9bza79mmn6g-home-manager-files/.config/niri/scripts/browser.sh
