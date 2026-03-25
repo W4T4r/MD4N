@@ -664,7 +664,7 @@
         "boxBorderEnabled": true,
         "fontDefault": "Neue Frutiger World",
         "fontDefaultScale": 1,
-        "fontFixed": "MonoLisa",
+        "fontFixed": "monospace",
         "fontFixedScale": 1,
         "panelBackgroundOpacity": 1,
         "panelsAttachedToBar": true,
