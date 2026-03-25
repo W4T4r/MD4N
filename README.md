@@ -25,6 +25,7 @@
 - 🧩 **Modular Layout**: `configuration.nix` and `home.nix` stay as stable entrypoints while internal modules split system, services, programs, fonts, and package profiles.
 - 👤 **Private Local Overrides**: Setup writes hostname, locale, timezone, Git identity, package profile, GPU vendor, dual-boot support, hibernate preference, and optional personal font settings into `user.local.nix`, which stays out of Git.
 - 📦 **Profile-Aware Packages**: `minimal`, `full`, and `custom` profiles are selected in setup and loaded internally by Home Manager and NixOS modules.
+- 🎛️ **Selective Full Profile**: Even in the `full` profile, setup can ask about less-common packages one by one so they are not installed blindly.
 - 🖥️ **GPU-Aware Defaults**: AMD systems use ROCm variants such as `btop-rocm` and `ollama-rocm`; other systems fall back to the generic packages.
 - ⌨️ **Japanese Input Ready**: Fcitx5 is configured with both Hazkey and Mozc.
 - 📁 **Dual File Tools**: Nemo is the graphical file manager, while Yazi covers terminal workflows.
@@ -95,7 +96,12 @@ During setup, MD4N can prompt for:
 - Git author name and email
 - Package profile: `minimal`, `full`, or `custom`
 - Custom font preferences opt-in
+- Font customization note: enabling custom fonts only turns on the font module; edit `/home/donghang/Documents/MD4N/home-manager/modules/fonts.nix` to tune the actual font families, or `/home/donghang/Documents/MD4N/user.local.nix` to toggle the module later
+- Full profile optional packages: setup can ask one by one about less-common packages such as Beyond Compare 5, DaVinci Resolve, Zotero, Podman Desktop, TeX Live Full, GlobalProtect, and virt-manager
 - GPU vendor: `amd`, `nvidia`, `intel`, or `generic`
+- GPU auto-detection prefers `/sys/class/drm` PCI vendor IDs and falls back to `lspci`; if needed you can still override it manually during setup
+- Fingerprint authentication: optional; when enabled, setup can immediately launch `fprintd-enroll <username>` after applying the configuration
+- When setup dependencies such as `git` or `lspci` are missing from `PATH`, the script can fall back to temporary `nix shell` commands when `nix` is available
 - Dual-boot support: enables GRUB `os-prober`
 - Hibernate / hybrid-sleep opt-in: available only when dual-boot support is off
 

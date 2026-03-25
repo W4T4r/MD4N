@@ -4,7 +4,7 @@
   programs = {
     home-manager.enable = true;
     gitui.enable = true;
-    bcompare5.enable = true;
+    bcompare5.enable = user.enableBcompare5 or true;
 
     direnv = {
       enable = true;

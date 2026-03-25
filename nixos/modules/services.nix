@@ -1,7 +1,7 @@
 { pkgs, user, ... }:
 
 {
-  services.fprintd.enable = true;
+  services.fprintd.enable = user.enableFingerprint or false;
   services.upower.enable = true;
   services.power-profiles-daemon.enable = true;
   services.tlp.enable = false;

@@ -123,34 +123,161 @@ detect_hostname() {
     printf '%s\n' "${detected:-nixos}"
 }
 
+detect_fullname() {
+    local username=$1
+    local gecos=""
+
+    if command -v getent >/dev/null 2>&1; then
+        gecos=$(getent passwd "$username" 2>/dev/null | cut -d ':' -f 5 | cut -d ',' -f 1 || true)
+    fi
+
+    if [[ -z "$gecos" && -r /etc/passwd ]]; then
+        gecos=$(awk -F: -v user="$username" '$1 == user { split($5, fields, ","); print fields[1]; exit }' /etc/passwd 2>/dev/null || true)
+    fi
+
+    printf '%s\n' "${gecos:-User}"
+}
+
 detect_git_config() {
     local key=$1
+    local detected=""
 
-    if ! command -v git >/dev/null 2>&1; then
+    if command -v git >/dev/null 2>&1; then
+        detected=$(git config --global --get "$key" 2>/dev/null || true)
+    elif has_nix; then
+        warn "git is not available in PATH. Falling back to a temporary nix shell with git." >&2
+        detected=$(run_nixpkgs_command git git config --global --get "$key" || true)
+    fi
+
+    printf '%s\n' "$detected"
+}
+
+has_nix() {
+    command -v nix >/dev/null 2>&1
+}
+
+run_nixpkgs_command() {
+    local package=$1
+    shift
+
+    if ! has_nix; then
+        return 1
+    fi
+
+    nix shell "nixpkgs#${package}" --command "$@" 2>/dev/null
+}
+
+get_lspci_output() {
+    if command -v lspci >/dev/null 2>&1; then
+        lspci 2>/dev/null || true
         return 0
     fi
 
-    git config --global --get "$key" 2>/dev/null || true
+    if has_nix; then
+        warn "lspci is not available in PATH. Falling back to a temporary nix shell with pciutils." >&2
+        run_nixpkgs_command pciutils lspci || true
+    fi
 }
 
 detect_gpu_vendor() {
     local detected=""
+    local drm_vendor_file=""
+    local drm_vendor_id=""
+    local display_lines=""
     local lspci_output=""
 
-    if command -v lspci >/dev/null 2>&1; then
-        lspci_output=$(lspci 2>/dev/null || true)
-        if printf '%s\n' "$lspci_output" | grep -Eiq 'vga|3d|display'; then
-            if printf '%s\n' "$lspci_output" | grep -Eiq 'amd|advanced micro devices|radeon'; then
+    for drm_vendor_file in /sys/class/drm/card*/device/vendor; do
+        if [[ ! -r "$drm_vendor_file" ]]; then
+            continue
+        fi
+
+        drm_vendor_id=$(tr '[:upper:]' '[:lower:]' < "$drm_vendor_file" 2>/dev/null || true)
+        case "$drm_vendor_id" in
+            0x1002)
                 detected="amd"
-            elif printf '%s\n' "$lspci_output" | grep -Eiq 'nvidia'; then
+                break
+                ;;
+            0x10de)
                 detected="nvidia"
-            elif printf '%s\n' "$lspci_output" | grep -Eiq 'intel'; then
+                break
+                ;;
+            0x8086)
+                detected="intel"
+                break
+                ;;
+        esac
+    done
+
+    if [[ -n "$detected" ]]; then
+        printf '%s\n' "$detected"
+        return 0
+    fi
+
+    lspci_output=$(get_lspci_output)
+    if [[ -n "$lspci_output" ]]; then
+        display_lines=$(printf '%s\n' "$lspci_output" | grep -Ei 'vga|3d|display' || true)
+        if [[ -n "$display_lines" ]]; then
+            if printf '%s\n' "$display_lines" | grep -Eiq 'amd|advanced micro devices|ati|radeon'; then
+                detected="amd"
+            elif printf '%s\n' "$display_lines" | grep -Eiq 'nvidia'; then
+                detected="nvidia"
+            elif printf '%s\n' "$display_lines" | grep -Eiq 'intel'; then
                 detected="intel"
             fi
         fi
     fi
 
     printf '%s\n' "${detected:-generic}"
+}
+
+print_dependency_status() {
+    detail "Dependency checks:"
+
+    if command -v git >/dev/null 2>&1; then
+        detail "  - git     : available in PATH"
+    elif has_nix; then
+        detail "  - git     : missing in PATH, will use temporary nix shell if needed"
+    else
+        detail "  - git     : missing in PATH, Git defaults may be empty"
+    fi
+
+    if command -v lspci >/dev/null 2>&1; then
+        detail "  - lspci   : available in PATH"
+    elif has_nix; then
+        detail "  - lspci   : missing in PATH, will use temporary nix shell if needed"
+    else
+        detail "  - lspci   : missing in PATH, GPU detection falls back to /sys/class/drm"
+    fi
+
+    if command -v getent >/dev/null 2>&1; then
+        detail "  - getent  : available in PATH"
+    else
+        detail "  - getent  : missing in PATH, will read /etc/passwd directly"
+    fi
+}
+
+normalize_gpu_vendor() {
+    local value=$1
+
+    value=$(printf '%s' "$value" | tr '[:upper:]' '[:lower:]')
+
+    case "$value" in
+        amd|ati|radeon)
+            printf 'amd'
+            ;;
+        nvidia)
+            printf 'nvidia'
+            ;;
+        intel)
+            printf 'intel'
+            ;;
+        generic|default|"")
+            printf 'generic'
+            ;;
+        *)
+            printf '%s' "$value"
+            ;;
+    esac
 }
 
 validate_locale() {
@@ -194,6 +321,89 @@ render_nix_bool() {
     else
         printf 'false'
     fi
+}
+
+print_package_profile_choices() {
+    detail "Package profiles:"
+    detail "  - minimal : lighter package set"
+    detail "  - full    : default workstation profile"
+    detail "  - custom  : full base intended for local tailoring"
+}
+
+print_gpu_vendor_choices() {
+    detail "GPU vendor choices:"
+    detail "  - amd     : enables ROCm variants for btop and ollama"
+    detail "  - nvidia  : uses generic packages"
+    detail "  - intel   : uses generic packages"
+    detail "  - generic : fallback when vendor-specific handling is not wanted"
+}
+
+print_font_preferences_help() {
+    detail "Custom font preferences only toggle the dedicated font module."
+    detail "You are expected to fine-tune the actual font families later."
+    detail "Edit: ${ROOT_DIR}/home-manager/modules/fonts.nix"
+    detail "If you only want to turn the module on or off later, edit: ${ROOT_DIR}/user.local.nix"
+}
+
+prompt_bool_with_default() {
+    local prompt=$1
+    local default_value=$2
+    local answer=""
+
+    if [[ "$default_value" == "true" ]]; then
+        read -p "${prompt} [Y/n] " answer
+        if [[ ! "$answer" =~ ^[nN]$ ]]; then
+            printf 'true'
+            return 0
+        fi
+    else
+        read -p "${prompt} [y/N] " answer
+        if [[ "$answer" =~ ^[yY]$ ]]; then
+            printf 'true'
+            return 0
+        fi
+    fi
+
+    printf 'false'
+}
+
+prompt_optional_full_packages() {
+    detail "Full profile optional packages:"
+    detail "You will be asked about packages many users do not need."
+
+    enable_bcompare5=$(prompt_bool_with_default "Include Beyond Compare 5 integration?" "true")
+    enable_google_chrome=$(prompt_bool_with_default "Include Google Chrome?" "true")
+    enable_thunderbird=$(prompt_bool_with_default "Include Thunderbird?" "true")
+    enable_obs_studio=$(prompt_bool_with_default "Include OBS Studio?" "true")
+    enable_davinci_resolve=$(prompt_bool_with_default "Include DaVinci Resolve?" "true")
+    enable_zotero=$(prompt_bool_with_default "Include Zotero?" "true")
+    enable_podman_desktop=$(prompt_bool_with_default "Include Podman Desktop?" "true")
+    enable_distrobox=$(prompt_bool_with_default "Include Distrobox?" "true")
+    enable_distroshelf=$(prompt_bool_with_default "Include Distroshelf?" "true")
+    enable_texlive_full=$(prompt_bool_with_default "Include TeX Live Full?" "true")
+    enable_global_protect=$(prompt_bool_with_default "Include GlobalProtect OpenConnect?" "true")
+    enable_virt_manager=$(prompt_bool_with_default "Include virt-manager and libvirt helper tools?" "true")
+}
+
+run_fingerprint_enroll() {
+    local username=$1
+
+    info "Starting fingerprint enrollment for ${username}."
+    detail "If you prefer to do this later, run: fprintd-enroll ${username}"
+
+    if command -v fprintd-enroll >/dev/null 2>&1; then
+        fprintd-enroll "$username"
+        return $?
+    fi
+
+    if has_nix; then
+        warn "fprintd-enroll is not available in PATH. Falling back to a temporary nix shell with fprintd." >&2
+        run_nixpkgs_command fprintd fprintd-enroll "$username"
+        return $?
+    fi
+
+    warn "fprintd-enroll is not available. After applying the configuration, run: fprintd-enroll ${username}"
+    return 1
 }
 
 render_fish_env() {
@@ -278,9 +488,7 @@ if is_interactive; then
 fi
 
 # 1. Dependency Check
-if ! command -v git &> /dev/null; then
-    warn "git is not installed. Some features might not work."
-fi
+print_dependency_status
 
 if [[ ! -f "${ROOT_DIR}/flake.nix" ]]; then
     error "Could not find flake.nix in ${ROOT_DIR}. Please run this script from the repository root."
@@ -303,7 +511,7 @@ dotroot="$ROOT_DIR"
 
 if is_interactive; then
     username=$(whoami)
-    DEFAULT_FULLNAME=$(getent passwd "$username" | cut -d ':' -f 5 | cut -d ',' -f 1 || echo "User")
+    DEFAULT_FULLNAME=$(detect_fullname "$username")
     DEFAULT_LOCALE=$(detect_locale)
     DEFAULT_TIMEZONE=$(detect_timezone)
     DEFAULT_HOSTNAME=$(detect_hostname)
@@ -355,7 +563,7 @@ if is_interactive; then
         warn "Git email is empty. Home Manager will not set programs.git.settings.user.email."
     fi
 
-    echo "Package profile options: minimal, full, custom"
+    print_package_profile_choices
     read -p "Select your package profile [full]: " package_profile
     package_profile=${package_profile:-full}
 
@@ -363,18 +571,41 @@ if is_interactive; then
         error "Invalid package profile: $package_profile"
     fi
 
-    read -p "Enable custom font preferences? [y/N] " enable_custom_fonts_confirm
-    if [[ "$enable_custom_fonts_confirm" =~ ^[yY]$ ]]; then
-        enable_custom_fonts="true"
-    else
-        enable_custom_fonts="false"
+    print_font_preferences_help
+    enable_custom_fonts=$(prompt_bool_with_default "Enable custom font preferences?" "false")
+
+    enable_bcompare5="true"
+    enable_google_chrome="true"
+    enable_thunderbird="true"
+    enable_obs_studio="true"
+    enable_davinci_resolve="true"
+    enable_zotero="true"
+    enable_podman_desktop="true"
+    enable_distrobox="true"
+    enable_distroshelf="true"
+    enable_texlive_full="true"
+    enable_global_protect="true"
+    enable_virt_manager="true"
+
+    if [[ "$package_profile" == "full" ]]; then
+        prompt_optional_full_packages
     fi
 
+    print_gpu_vendor_choices
     read -p "Enter your GPU vendor [$DEFAULT_GPU_VENDOR]: " gpu_vendor
     gpu_vendor=${gpu_vendor:-$DEFAULT_GPU_VENDOR}
+    gpu_vendor=$(normalize_gpu_vendor "$gpu_vendor")
 
     if ! validate_gpu_vendor "$gpu_vendor"; then
         error "Invalid GPU vendor: $gpu_vendor"
+    fi
+
+    read -p "Enable fingerprint authentication? [y/N] " enable_fingerprint_confirm
+    if [[ "$enable_fingerprint_confirm" =~ ^[yY]$ ]]; then
+        enable_fingerprint="true"
+        detail "Fingerprint enrollment command: fprintd-enroll ${username}"
+    else
+        enable_fingerprint="false"
     fi
 
     read -p "Enable dual-boot support (GRUB os-prober)? [y/N] " enable_dual_boot_confirm
@@ -403,14 +634,27 @@ if is_interactive; then
     detail "Git email: ${git_email:-<unset>}"
     detail "Profile  : ${package_profile}"
     detail "Fonts    : ${enable_custom_fonts}"
+    detail "BCompare : ${enable_bcompare5}"
+    detail "Chrome   : ${enable_google_chrome}"
+    detail "Mail     : ${enable_thunderbird}"
+    detail "OBS      : ${enable_obs_studio}"
+    detail "Resolve  : ${enable_davinci_resolve}"
+    detail "Zotero   : ${enable_zotero}"
+    detail "Podman UI: ${enable_podman_desktop}"
+    detail "Distrobox: ${enable_distrobox}"
+    detail "Shelf    : ${enable_distroshelf}"
+    detail "TeX Live : ${enable_texlive_full}"
+    detail "GP VPN   : ${enable_global_protect}"
+    detail "Virt Mgr : ${enable_virt_manager}"
     detail "GPU      : ${gpu_vendor}"
+    detail "Fingerprint: ${enable_fingerprint}"
     detail "Dualboot : ${enable_dual_boot}"
     detail "Hibernate: ${enable_hibernate}"
     detail "Dotfiles : ${dotroot}"
 else
     # Non-interactive defaults
     username=$(whoami)
-    fullname=$(getent passwd "$username" | cut -d ':' -f 5 | cut -d ',' -f 1 || echo "User")
+    fullname=$(detect_fullname "$username")
     locale_value=$(detect_locale)
     timezone_value=$(detect_timezone)
     hostname_value=$(detect_hostname)
@@ -423,9 +667,74 @@ else
 
     package_profile="full"
     enable_custom_fonts="false"
-    gpu_vendor=$(detect_gpu_vendor)
+    enable_bcompare5="true"
+    enable_google_chrome="true"
+    enable_thunderbird="true"
+    enable_obs_studio="true"
+    enable_davinci_resolve="true"
+    enable_zotero="true"
+    enable_podman_desktop="true"
+    enable_distrobox="true"
+    enable_distroshelf="true"
+    enable_texlive_full="true"
+    enable_global_protect="true"
+    enable_virt_manager="true"
+    gpu_vendor=$(normalize_gpu_vendor "$(detect_gpu_vendor)")
+    enable_fingerprint="false"
     enable_dual_boot="false"
     enable_hibernate="false"
+fi
+
+if ! validate_bool_string "$enable_fingerprint"; then
+    error "Invalid fingerprint flag: $enable_fingerprint"
+fi
+
+if ! validate_bool_string "$enable_bcompare5"; then
+    error "Invalid Beyond Compare flag: $enable_bcompare5"
+fi
+
+if ! validate_bool_string "$enable_google_chrome"; then
+    error "Invalid Google Chrome flag: $enable_google_chrome"
+fi
+
+if ! validate_bool_string "$enable_thunderbird"; then
+    error "Invalid Thunderbird flag: $enable_thunderbird"
+fi
+
+if ! validate_bool_string "$enable_obs_studio"; then
+    error "Invalid OBS Studio flag: $enable_obs_studio"
+fi
+
+if ! validate_bool_string "$enable_davinci_resolve"; then
+    error "Invalid DaVinci Resolve flag: $enable_davinci_resolve"
+fi
+
+if ! validate_bool_string "$enable_zotero"; then
+    error "Invalid Zotero flag: $enable_zotero"
+fi
+
+if ! validate_bool_string "$enable_podman_desktop"; then
+    error "Invalid Podman Desktop flag: $enable_podman_desktop"
+fi
+
+if ! validate_bool_string "$enable_distrobox"; then
+    error "Invalid Distrobox flag: $enable_distrobox"
+fi
+
+if ! validate_bool_string "$enable_distroshelf"; then
+    error "Invalid Distroshelf flag: $enable_distroshelf"
+fi
+
+if ! validate_bool_string "$enable_texlive_full"; then
+    error "Invalid TeX Live flag: $enable_texlive_full"
+fi
+
+if ! validate_bool_string "$enable_global_protect"; then
+    error "Invalid GlobalProtect flag: $enable_global_protect"
+fi
+
+if ! validate_bool_string "$enable_virt_manager"; then
+    error "Invalid virt-manager flag: $enable_virt_manager"
 fi
 
 if ! validate_bool_string "$enable_dual_boot"; then
@@ -464,7 +773,20 @@ let
   gitEmail = "$(escape_nix_string "$git_email")";
   packageProfile = "$(escape_nix_string "$package_profile")";
   enableCustomFonts = $(render_nix_bool "$enable_custom_fonts");
+  enableBcompare5 = $(render_nix_bool "$enable_bcompare5");
+  enableGoogleChrome = $(render_nix_bool "$enable_google_chrome");
+  enableThunderbird = $(render_nix_bool "$enable_thunderbird");
+  enableObsStudio = $(render_nix_bool "$enable_obs_studio");
+  enableDavinciResolve = $(render_nix_bool "$enable_davinci_resolve");
+  enableZotero = $(render_nix_bool "$enable_zotero");
+  enablePodmanDesktop = $(render_nix_bool "$enable_podman_desktop");
+  enableDistrobox = $(render_nix_bool "$enable_distrobox");
+  enableDistroshelf = $(render_nix_bool "$enable_distroshelf");
+  enableTexliveFull = $(render_nix_bool "$enable_texlive_full");
+  enableGlobalProtect = $(render_nix_bool "$enable_global_protect");
+  enableVirtManager = $(render_nix_bool "$enable_virt_manager");
   gpuVendor = "$(escape_nix_string "$gpu_vendor")";
+  enableFingerprint = $(render_nix_bool "$enable_fingerprint");
   enableDualBoot = $(render_nix_bool "$enable_dual_boot");
   enableHibernate = $(render_nix_bool "$enable_hibernate");
   home = "/home/\${name}";
@@ -474,7 +796,7 @@ let
   app = "\${homemanager}/applications";
 in
 {
-  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableCustomFonts gpuVendor enableDualBoot enableHibernate home dotroot homemanager cfg app;
+  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableCustomFonts enableBcompare5 enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtManager gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app;
 }
 EOF
 
@@ -537,17 +859,34 @@ if [[ "$AUTO_MODE" == "true" ]]; then
     home-manager switch -b md4nbak --flake "path:${ROOT_DIR}#${username}"
     
     success "Configuration applied successfully."
+
+    if is_interactive && [[ "$enable_fingerprint" == "true" ]]; then
+        read -p "Fingerprint authentication is enabled. Enroll a fingerprint now? [y/N] " enroll_fingerprint_now
+        if [[ "$enroll_fingerprint_now" =~ ^[yY]$ ]]; then
+            run_fingerprint_enroll "$username" || warn "Fingerprint enrollment did not complete. You can retry later with: fprintd-enroll ${username}"
+        fi
+    fi
 elif is_interactive; then
     read -p "Would you like to apply the configuration now? (This will run forge.sh) [y/N] " apply_conf
     if [[ "$apply_conf" =~ ^[yY]$ ]]; then
         [[ -f "$FORGE_SCRIPT" ]] || error "Could not find forge.sh at ${FORGE_SCRIPT}"
         info "Running: bash ${FORGE_SCRIPT}"
         bash "$FORGE_SCRIPT"
+
+        if [[ "$enable_fingerprint" == "true" ]]; then
+            read -p "Fingerprint authentication is enabled. Enroll a fingerprint now? [y/N] " enroll_fingerprint_now
+            if [[ "$enroll_fingerprint_now" =~ ^[yY]$ ]]; then
+                run_fingerprint_enroll "$username" || warn "Fingerprint enrollment did not complete. You can retry later with: fprintd-enroll ${username}"
+            fi
+        fi
     else
         info "Next steps (manual):"
         echo -e "  1. Edit ${YELLOW}user.nix${NC} if needed."
         echo -e "  2. Run: ${YELLOW}bash scripts/mn.sh${NC} for the control center."
         echo -e "  3. Or run: ${YELLOW}bash ${FORGE_SCRIPT}${NC} to apply changes directly."
+        if [[ "$enable_fingerprint" == "true" ]]; then
+            echo -e "  4. After applying, run: ${YELLOW}fprintd-enroll ${username}${NC}"
+        fi
     fi
 fi
 

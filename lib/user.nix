@@ -6,6 +6,80 @@ let
       import localPath
     else
       { };
+  normalizeGpuVendor =
+    value:
+    let
+      normalized = builtins.replaceStrings
+        [
+          "A"
+          "B"
+          "C"
+          "D"
+          "E"
+          "F"
+          "G"
+          "H"
+          "I"
+          "J"
+          "K"
+          "L"
+          "M"
+          "N"
+          "O"
+          "P"
+          "Q"
+          "R"
+          "S"
+          "T"
+          "U"
+          "V"
+          "W"
+          "X"
+          "Y"
+          "Z"
+        ]
+        [
+          "a"
+          "b"
+          "c"
+          "d"
+          "e"
+          "f"
+          "g"
+          "h"
+          "i"
+          "j"
+          "k"
+          "l"
+          "m"
+          "n"
+          "o"
+          "p"
+          "q"
+          "r"
+          "s"
+          "t"
+          "u"
+          "v"
+          "w"
+          "x"
+          "y"
+          "z"
+        ]
+        (toString value);
+    in
+    if builtins.elem normalized [
+      "amd"
+      "ati"
+      "radeon"
+    ] then
+      "amd"
+    else if normalized == "nvidia" then
+      "nvidia"
+    else if normalized == "intel" then
+      "intel"
+    else
+      "generic";
 
   merged = base // local;
   dotroot =
@@ -47,4 +121,5 @@ merged
       base.app
     else
       "${homemanager}/applications";
+  gpuVendor = normalizeGpuVendor (merged.gpuVendor or "generic");
 }

@@ -18,7 +18,20 @@ let
   gitEmail = "";
   packageProfile = "full";
   enableCustomFonts = false;
+  enableBcompare5 = true;
+  enableGoogleChrome = true;
+  enableThunderbird = true;
+  enableObsStudio = true;
+  enableDavinciResolve = true;
+  enableZotero = true;
+  enablePodmanDesktop = true;
+  enableDistrobox = true;
+  enableDistroshelf = true;
+  enableTexliveFull = true;
+  enableGlobalProtect = true;
+  enableVirtManager = true;
   gpuVendor = "generic";
+  enableFingerprint = false;
   enableDualBoot = false;
   enableHibernate = false;
   home = "/home/${name}";
@@ -28,5 +41,5 @@ let
   app = "${homemanager}/applications";
 in
 {
-  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableCustomFonts gpuVendor enableDualBoot enableHibernate home dotroot homemanager cfg app;
+  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableCustomFonts enableBcompare5 enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtManager gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app;
 }

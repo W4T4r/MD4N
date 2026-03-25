@@ -1,15 +1,12 @@
 { pkgs, inputs, user, ... }:
 
 let
-  virtualizationPackages = with pkgs; [
-    virt-manager
-    dnsmasq
-    phodav
-  ];
-  optionalWorkstationPackages = [
-    pkgs.texliveFull
-    inputs.globalprotect-openconnect.packages.${pkgs.stdenv.hostPlatform.system}.default
-  ];
+  virtualizationPackages =
+    (if user.enableVirtManager or true then [ pkgs.virt-manager ] else [ ])
+    ++ (if user.enableVirtManager or true then [ pkgs.dnsmasq pkgs.phodav ] else [ ]);
+  optionalWorkstationPackages =
+    (if user.enableTexliveFull or true then [ pkgs.texliveFull ] else [ ])
+    ++ (if user.enableGlobalProtect or true then [ inputs.globalprotect-openconnect.packages.${pkgs.stdenv.hostPlatform.system}.default ] else [ ]);
   btopPackage =
     if (user.gpuVendor or "generic") == "amd" then
       pkgs.btop-rocm
