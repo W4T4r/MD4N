@@ -32,17 +32,7 @@
         };
     };
 
-    kitty = {
-      enable = true;
-      font = {
-        name = "MonoLisa";
-        size = 12;
-      };
-      settings = {
-        background_opacity = "0.8";
-      };
-      themeFile = "tokyo_night_moon";
-    };
+    kitty.enable = true;
 
     nvchad = {
       enable = true;

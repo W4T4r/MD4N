@@ -54,6 +54,7 @@ in {
       "clipse/custom_theme.json".source = ../config/clipse/custom_theme.json;
       "fastfetch".source = ../config/fastfetch;
       "gitui".source = ../config/gitui;
+      "kitty".source = ../config/kitty;
       "yazi".source = ../config/yazi;
 
       "btop".source = symlink "${user.cfg}/btop";

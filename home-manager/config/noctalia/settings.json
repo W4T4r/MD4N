@@ -155,12 +155,12 @@
                 },
                 {
                     "clockColor": "none",
-                    "customFont": "Neue Frutiger World Medium",
+                    "customFont": "",
                     "formatHorizontal": "HH:mm ddd, MMM dd",
                     "formatVertical": "HH mm - dd MM",
                     "id": "Clock",
                     "tooltipFormat": "HH:mm ddd, MMM dd",
-                    "useCustomFont": true
+                    "useCustomFont": false
                 },
                 {
                     "hideWhenZero": false,
@@ -662,7 +662,7 @@
     },
     "ui": {
         "boxBorderEnabled": true,
-        "fontDefault": "Neue Frutiger World",
+        "fontDefault": "System Default",
         "fontDefaultScale": 1,
         "fontFixed": "monospace",
         "fontFixedScale": 1,
