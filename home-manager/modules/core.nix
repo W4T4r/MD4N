@@ -12,6 +12,9 @@ in {
     homeDirectory = user.home;
     stateVersion = "25.11";
     sessionPath = ["${user.dotroot}/scripts"];
+    packages = with pkgs; [
+      rime-ice
+    ];
   };
 
   nixpkgs.config.allowUnfree = true;
@@ -87,6 +90,7 @@ in {
       "applications/code.desktop".source = ../applications/code.desktop;
       "applications/neovim.desktop".source = ../applications/neovim.desktop;
       "applications/typora.desktop".source = ../applications/typora.desktop;
+      "fcitx5/rime".source = ../config/fcitx5/rime;
     };
   };
 
@@ -103,6 +107,7 @@ in {
     enable = true;
     type = "fcitx5";
     fcitx5.addons = with pkgs; [
+      fcitx5-rime
       fcitx5-mozc-ut
       fcitx5-gtk
     ];
