@@ -662,7 +662,7 @@
     },
     "ui": {
         "boxBorderEnabled": true,
-        "fontDefault": "System Default",
+        "fontDefault": "Neue Frutiger World",
         "fontDefaultScale": 1,
         "fontFixed": "monospace",
         "fontFixedScale": 1,
