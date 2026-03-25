@@ -510,7 +510,7 @@ EOF
 }
 
 configure_niri_outputs() {
-    local output_file="/home/${username}/.local/share/md4n/niri/outputs.kdl"
+    local output_file="${dotroot}/home-manager/config/niri/outputs.kdl"
     local output_backup="${output_file}.bak"
     local -a outputs=()
     local -a mode_list=()
@@ -827,7 +827,7 @@ EOF
 write_niri_browser_script() {
     local username=$1
     local browser=$2
-    local browser_script_file="/home/${username}/.local/share/md4n/niri/browser.sh"
+    local browser_script_file="${dotroot}/home-manager/config/niri/scripts/browser.sh"
     local browser_script_backup="${browser_script_file}.bak"
 
     mkdir -p "$(dirname "$browser_script_file")"
@@ -1378,8 +1378,8 @@ let
   cfg = "\${homemanager}/config";
   app = "\${homemanager}/applications";
   faceFile = "";
-  niriBrowserScript = "\${home}/.local/share/md4n/niri/browser.sh";
-  niriOutputsFile = "\${home}/.local/share/md4n/niri/outputs.kdl";
+  niriBrowserScript = "\${dotroot}/home-manager/config/niri/scripts/browser.sh";
+  niriOutputsFile = "\${dotroot}/home-manager/config/niri/outputs.kdl";
 in
 {
   inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableW4T4rFonts enableBcompare5 enableVesktop enableCava enableGeminiCli enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtualization enableVirtManager enableOllama enableSteam browser gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile niriBrowserScript niriOutputsFile;

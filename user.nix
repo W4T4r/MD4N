@@ -48,8 +48,8 @@ let
   app = "${homemanager}/applications";
   faceFile = "";
   browser = "firefox";
-  niriBrowserScript = "${home}/.local/share/md4n/niri/browser.sh";
-  niriOutputsFile = "${home}/.local/share/md4n/niri/outputs.kdl";
+  niriBrowserScript = "${dotroot}/home-manager/config/niri/scripts/browser.sh";
+  niriOutputsFile = "${dotroot}/home-manager/config/niri/outputs.kdl";
 in {
   inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableW4T4rFonts enableBcompare5 enableVesktop enableCava enableGeminiCli enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtualization enableVirtManager enableOllama enableSteam gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile browser niriBrowserScript niriOutputsFile;
 }

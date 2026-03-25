@@ -6,17 +6,6 @@
   ...
 }: let
   symlink = config.lib.file.mkOutOfStoreSymlink;
-  niriSharedFiles = [
-    "animations.kdl"
-    "config.kdl"
-    "debug-options.kdl"
-    "input.kdl"
-    "key-bindings.kdl"
-    "layer-rules.kdl"
-    "layout.kdl"
-    "miscellaneous.kdl"
-    "window-rules.kdl"
-  ];
   rimeIceData = "${pkgs.rime-ice}/share/rime-data";
   rimeIceFiles = [
     "custom_phrase.txt"
@@ -62,39 +51,6 @@ in {
         ${pkgs.bash}/bin/bash ${../../scripts/prune-backups.sh}
       fi
     '';
-
-    linkNiriSharedConfig = lib.hm.dag.entryAfter ["linkGeneration"] ''
-      niri_dir="$HOME/.config/niri"
-      mkdir -p "$niri_dir" "$niri_dir/scripts"
-
-      for file in ${lib.concatStringsSep " " niriSharedFiles}; do
-        target="${user.cfg}/niri/$file"
-        link="$niri_dir/$file"
-
-        if [ -L "$link" ] && [ "$(readlink "$link")" = "$target" ]; then
-          continue
-        fi
-
-        if [ -e "$link" ] && [ ! -L "$link" ]; then
-          mv "$link" "$link.md4nbak"
-        else
-          rm -f "$link"
-        fi
-
-        ln -s "$target" "$link"
-      done
-
-      polkit_target="${user.cfg}/niri/scripts/polkit.sh"
-      polkit_link="$niri_dir/scripts/polkit.sh"
-
-      if [ -L "$polkit_link" ] && [ "$(readlink "$polkit_link")" != "$polkit_target" ]; then
-        rm -f "$polkit_link"
-      fi
-
-      if [ ! -e "$polkit_link" ]; then
-        ln -s "$polkit_target" "$polkit_link"
-      fi
-    '';
   };
 
   xdg = {
@@ -124,12 +80,11 @@ in {
 
       "btop".source = ../config/btop;
       "fcitx5".source = ../config/fcitx5;
-      "fish/functions".source = ../config/fish/functions;
+      "fish".source = ../config/fish;
       "gtk-3.0".source = ../config/gtk-3.0;
       "gtk-4.0".source = ../config/gtk-4.0;
       "Kvantum".source = ../config/Kvantum;
-      "niri/outputs.kdl".source = symlink user.niriOutputsFile;
-      "niri/scripts/browser.sh".source = symlink user.niriBrowserScript;
+      "niri".source = ../config/niri;
       "noctalia".source = ../config/noctalia;
       "nvtop".source = ../config/nvtop;
       "nwg-look".source = ../config/nwg-look;
