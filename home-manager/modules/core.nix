@@ -80,11 +80,11 @@ in {
 
       "btop".source = ../config/btop;
       "fcitx5".source = ../config/fcitx5;
-      "fish".source = ../config/fish;
+      "fish".source = symlink "${user.cfg}/fish";
       "gtk-3.0".source = ../config/gtk-3.0;
       "gtk-4.0".source = ../config/gtk-4.0;
       "Kvantum".source = ../config/Kvantum;
-      "niri".source = ../config/niri;
+      "niri".source = symlink "${user.cfg}/niri";
       "noctalia".source = ../config/noctalia;
       "nvtop".source = ../config/nvtop;
       "nwg-look".source = ../config/nwg-look;

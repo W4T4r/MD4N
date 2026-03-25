@@ -1,3 +1,5 @@
 /user.local.nix
 /user.local.nix.bak
 /.direnv/
+/home-manager/config/niri/outputs.kdl
+/home-manager/config/niri/outputs.kdl.bak

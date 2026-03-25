@@ -510,7 +510,7 @@ EOF
 }
 
 configure_niri_outputs() {
-    local output_file="/home/${username}/.config/md4n/niri/outputs.kdl"
+    local output_file="/home/${username}/.config/niri/outputs.kdl"
     local output_backup="${output_file}.bak"
     local -a outputs=()
     local -a mode_list=()
@@ -539,7 +539,7 @@ configure_niri_outputs() {
     step "Preparing niri output configuration"
     detail "Using modetest to detect DRM connectors, modes, and preferred timings."
 
-    if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
+    if is_interactive; then
         detail "Detected outputs:"
         for i in "${!outputs[@]}"; do
             IFS='|' read -r connector_name mm_width mm_height preferred_mode modes_csv <<< "${outputs[$i]}"
@@ -578,7 +578,7 @@ configure_niri_outputs() {
         done
     fi
 
-    if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
+    if is_interactive; then
         detail "Available modes for ${connector_name}:"
         for i in "${!mode_list[@]}"; do
             output_summary="${mode_list[$i]}"
@@ -596,7 +596,7 @@ configure_niri_outputs() {
     selected_mode="${mode_list[$((selected_mode_index - 1))]}"
     selected_scale=$(suggest_output_scale "$selected_mode" "$mm_width" "$mm_height")
 
-    if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
+    if is_interactive; then
         detail "Suggested scale for ${connector_name} at ${selected_mode}: ${selected_scale}"
         read -p "Enter scale for ${connector_name} [${selected_scale}]: " output_summary
         output_summary=${output_summary:-$selected_scale}
@@ -885,7 +885,7 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
         AUTO_MODE=true
         success "Proceeding with automatic setup..."
     else
-        read -p "Enable automatic setup? (Skips name/locale/timezone/hostname/Git/GPU/fingerprint/dual-boot prompts, but still asks about profile and optional packages) [y/N] " auto_confirm
+        read -p "Enable automatic setup? (Skips name/locale/timezone/hostname/Git/GPU/fingerprint/dual-boot prompts, but still asks about display, profile, and optional packages) [y/N] " auto_confirm
         if [[ "$auto_confirm" =~ ^[yY]$ ]]; then
             AUTO_MODE=true
             info "Automatic mode enabled."
@@ -1400,7 +1400,7 @@ let
   app = "\${homemanager}/applications";
   faceFile = "";
   niriBrowserScript = "\${home}/.config/md4n/niri/browser.sh";
-  niriOutputsFile = "\${home}/.config/md4n/niri/outputs.kdl";
+  niriOutputsFile = "\${home}/.config/niri/outputs.kdl";
 in
 {
   inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableW4T4rFonts enableBcompare5 enableVesktop enableCava enableGeminiCli enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtualization enableVirtManager enableOllama enableSteam browser gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile niriBrowserScript niriOutputsFile;
