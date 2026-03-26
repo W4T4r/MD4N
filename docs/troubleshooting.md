@@ -6,7 +6,7 @@ The main scripts involved are:
 
 - [install.sh](../install.sh)
 - [scripts/bootstrap.sh](../scripts/bootstrap.sh)
-- [scripts/setup.sh](../scripts/setup.sh)
+- [scripts/configure-local.sh](../scripts/configure-local.sh)
 - [scripts/forge.sh](../scripts/forge.sh)
 
 ## `user.local.nix` Is Missing
@@ -18,7 +18,7 @@ Symptoms:
 
 What to do:
 
-1. Run [scripts/setup.sh](../scripts/setup.sh) again.
+1. Run [scripts/configure-local.sh](../scripts/configure-local.sh) again.
 2. Check whether the script completed all the way through the generation step.
 3. Verify that `user.local.nix` now exists in the repository root.
 
@@ -55,7 +55,7 @@ Symptoms:
 What to do:
 
 - Use [install.sh](../install.sh) or [scripts/bootstrap.sh](../scripts/bootstrap.sh) instead of running the menu scripts first
-- `bootstrap.sh` can launch setup through a temporary `nix shell` when `fzf` is not already present
+- `bootstrap.sh` can launch local configuration through a temporary `nix shell` when `fzf` is not already present
 
 If the system is already configured, you can also enter the repo and run:
 
@@ -69,18 +69,18 @@ That gives you the local validation shell, but the normal interactive operator f
 
 Symptoms:
 
-- the setup script chooses the wrong GPU vendor
+- the local configuration script chooses the wrong GPU vendor
 - ROCm-specific packages are not selected when expected
 
 What to know:
 
-- [scripts/setup.sh](../scripts/setup.sh) first checks `/sys/class/drm`
+- [scripts/configure-local.sh](../scripts/configure-local.sh) first checks `/sys/class/drm`
 - if needed, it falls back to `lspci`
 - in guided mode, you can still choose a different value before generation
 
 What to do:
 
-1. Re-run [scripts/setup.sh](../scripts/setup.sh).
+1. Re-run [scripts/configure-local.sh](../scripts/configure-local.sh).
 2. In guided mode, pick the correct GPU vendor manually.
 3. Apply again after regeneration.
 
@@ -89,17 +89,17 @@ What to do:
 Symptoms:
 
 - no connected outputs are detected
-- the generated `outputs.kdl` is not updated
+- the generated `outputs.local.kdl` is not updated
 
 What to know:
 
-- [scripts/setup.sh](../scripts/setup.sh) uses `modetest -c`
+- [scripts/configure-niri-outputs.sh](../scripts/configure-niri-outputs.sh) uses `modetest -c`
 - if `modetest` is not in `PATH`, it can fall back to a temporary `nix shell`
 - when no outputs can be detected, the script keeps the existing Niri outputs config instead of guessing
 
 What to do:
 
-1. Re-run [scripts/setup.sh](../scripts/setup.sh).
+1. Re-run [scripts/configure-niri-outputs.sh](../scripts/configure-niri-outputs.sh).
 2. Watch for warnings about `modetest`.
 3. If detection still fails, keep the previous generated file or investigate DRM access on that machine.
 
@@ -107,18 +107,18 @@ What to do:
 
 Symptoms:
 
-- setup fails while generating `nixos/hardware-configuration.nix`
+- local configuration fails while generating `nixos/hardware-configuration.nix`
 - `sudo` works, but the hardware file is not updated
 
 What to know:
 
-- setup uses `sudo nixos-generate-config --show-hardware-config`
+- local configuration uses `sudo nixos-generate-config --show-hardware-config`
 - the result is written back into [nixos/hardware-configuration.nix](../nixos/hardware-configuration.nix)
 
 What to do:
 
 1. Make sure `sudo` is available and your user can use it.
-2. Re-run [scripts/setup.sh](../scripts/setup.sh).
+2. Re-run [scripts/configure-local.sh](../scripts/configure-local.sh).
 3. If you do not want to regenerate hardware config on that machine, skip the prompt and keep the existing file.
 
 ## Fingerprint Enrollment Did Not Happen
@@ -173,7 +173,7 @@ Symptoms:
 What to do:
 
 1. Re-run the failing command directly to isolate whether the problem is in the wrapper or the underlying tool.
-2. Check whether `user.local.nix` was regenerated after your latest setup change.
+2. Check whether `user.local.nix` was regenerated after your latest local configuration change.
 3. Confirm that you are applying from the repository you expect.
 4. Use the `path:` flake form if you are invoking the raw commands yourself.
 

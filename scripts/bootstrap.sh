@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # MD4N bootstrap script
-# Prepares Nix flakes support, then hands off to scripts/setup.sh.
+# Prepares Nix flakes support, then hands off to scripts/configure-local.sh.
 
 set -euo pipefail
 
@@ -48,7 +48,7 @@ Options:
 
 bootstrap.sh checks Nix prerequisites, enables flakes if needed,
 temporarily enables fzf via nix if needed, and then launches
-scripts/setup.sh for the interactive setup.
+scripts/configure-local.sh for the interactive local configuration.
 EOF
 }
 
@@ -92,14 +92,14 @@ detail() {
 launch_setup() {
     if command -v fzf >/dev/null 2>&1; then
         info "fzf is already available in PATH."
-        info "Running: bash ${SETUP_SCRIPT}"
-        MD4N_CHAINED=1 bash "$SETUP_SCRIPT"
+        info "Running: bash ${CONFIGURE_LOCAL_SCRIPT}"
+        MD4N_CHAINED=1 bash "$CONFIGURE_LOCAL_SCRIPT"
         return 0
     fi
 
-    info "fzf is not installed in PATH. Starting setup inside a temporary nix shell."
-    detail "Command: nix shell nixpkgs#fzf --command bash ${SETUP_SCRIPT}"
-    MD4N_CHAINED=1 nix shell nixpkgs#fzf --command bash "$SETUP_SCRIPT"
+    info "fzf is not installed in PATH. Starting local configuration inside a temporary nix shell."
+    detail "Command: nix shell nixpkgs#fzf --command bash ${CONFIGURE_LOCAL_SCRIPT}"
+    MD4N_CHAINED=1 nix shell nixpkgs#fzf --command bash "$CONFIGURE_LOCAL_SCRIPT"
 }
 
 print_banner() {
@@ -113,17 +113,17 @@ print_banner() {
     summary_row "Repository" "${ROOT_DIR}"
     summary_row "Previous" "install.sh"
     summary_row "Current" "bootstrap.sh"
-    summary_row "Next" "setup.sh"
-    summary_row "Flow" "install.sh -> bootstrap.sh -> setup.sh"
-    summary_row "Purpose" "prepare Nix and launch interactive setup"
+    summary_row "Next" "configure-local.sh"
+    summary_row "Flow" "install.sh -> bootstrap.sh -> configure-local.sh"
+    summary_row "Purpose" "prepare Nix and launch local configuration"
     rule
-    echo "This stage verifies Nix prerequisites, enables flakes if needed, then hands off to setup."
+    echo "This stage verifies Nix prerequisites, enables flakes if needed, then hands off to local configuration."
     echo
 }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
-SETUP_SCRIPT="${ROOT_DIR}/scripts/setup.sh"
+CONFIGURE_LOCAL_SCRIPT="${ROOT_DIR}/scripts/configure-local.sh"
 
 case "${1:-}" in
     --help|-h)
@@ -139,7 +139,7 @@ require_command sudo
 require_command nix
 
 [[ -f "${ROOT_DIR}/flake.nix" ]] || error "Could not find flake.nix in ${ROOT_DIR}"
-[[ -f "$SETUP_SCRIPT" ]] || error "Could not find the setup script at ${SETUP_SCRIPT}"
+[[ -f "$CONFIGURE_LOCAL_SCRIPT" ]] || error "Could not find the local configuration script at ${CONFIGURE_LOCAL_SCRIPT}"
 
 step "[1/3] Checking Nix prerequisites"
 info "Required commands: bash, sudo, nix"
@@ -148,8 +148,8 @@ info "flake.nix location: ${ROOT_DIR}/flake.nix"
 step "[2/3] Enabling MD4N Nix support"
 ensure_flakes_enabled
 
-step "[3/3] Launching MD4N setup"
-info "Flow: install.sh -> bootstrap.sh -> setup.sh"
+step "[3/3] Launching MD4N local configuration"
+info "Flow: install.sh -> bootstrap.sh -> configure-local.sh"
 launch_setup
 
 echo ""

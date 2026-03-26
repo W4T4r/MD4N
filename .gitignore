@@ -3,3 +3,4 @@
 /.direnv/
 /home-manager/config/niri/outputs.kdl
 /home-manager/config/niri/outputs.kdl.bak
+/home-manager/config/niri/outputs.local.kdl
