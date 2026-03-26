@@ -16,7 +16,7 @@ let
   gitName = "Your Name";
   gitEmail = "";
   packageProfile = "full";
-  enableW4T4rFonts = false;
+  enablePersonalFonts = false;
   enableBcompare5 = true;
   enableVesktop = true;
   enableCava = true;
@@ -51,5 +51,5 @@ let
   niriBrowserScript = "${home}/.config/md4n/niri/browser.sh";
   niriOutputsFile = "${home}/.config/niri/outputs.kdl";
 in {
-  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableW4T4rFonts enableBcompare5 enableVesktop enableCava enableGeminiCli enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtualization enableVirtManager enableOllama enableSteam gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile browser niriBrowserScript niriOutputsFile;
+  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enablePersonalFonts enableBcompare5 enableVesktop enableCava enableGeminiCli enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtualization enableVirtManager enableOllama enableSteam gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile browser niriBrowserScript niriOutputsFile;
 }

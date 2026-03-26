@@ -10,10 +10,10 @@
 # ██║ ╚═╝ ██║██████╔╝     ██║██║ ╚████║
 # ╚═╝     ╚═╝╚═════╝      ╚═╝╚═╝  ╚═══╝
 let
-  userPackageProfile = "w4t4r";
+  userPackageProfile = "personal";
   packageProfile = user.packageProfile or "full";
   packageModule =
-    if builtins.elem packageProfile ["minimal" "full" "custom" userPackageProfile]
+    if builtins.elem packageProfile ["minimal" "full" userPackageProfile]
     then ./modules/packages + "/${packageProfile}.nix"
     else throw "Unsupported package profile '${packageProfile}' in user.nix";
 in {
@@ -27,7 +27,7 @@ in {
       inputs.nix-hazkey.homeModules.hazkey
     ]
     ++ (
-      if (user.enableW4T4rFonts or false) || (user.enableCustomFonts or false)
+      if (user.enablePersonalFonts or false) || (user.enableW4T4rFonts or false) || (user.enableCustomFonts or false)
       then [./modules/fonts.nix]
       else []
     );
