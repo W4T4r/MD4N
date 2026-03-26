@@ -3,11 +3,6 @@
 
   inputs = {
     md4n.url = "path:__MD4N_ROOT__";
-    bcompare5 = {
-      url = "github:W4T4r/nix-bcompare5";
-      inputs.nixpkgs.follows = "md4n/nixpkgs";
-    };
-    globalprotect-openconnect.url = "github:yuezk/GlobalProtect-openconnect";
   };
 
   outputs = inputs @ {md4n, ...}: let
@@ -39,7 +34,6 @@
       };
       extraModules = [
         ./home-manager/default.nix
-        inputs.bcompare5.homeManagerModules.default
       ];
     };
   };

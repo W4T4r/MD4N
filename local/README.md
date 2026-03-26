@@ -28,8 +28,8 @@ Structure:
 
 Typical local-only uses:
 
-- Put licensed NixOS packages such as GlobalProtect OpenConnect in `local/nixos/packages.nix`.
-- Put licensed Home Manager programs such as Beyond Compare 5 in `local/home-manager/programs.nix`.
-- Put machine-specific or local-only Home Manager packages such as OBS Studio and DaVinci Resolve in `local/home-manager/packages.nix`.
+- Put machine-specific NixOS packages in `local/nixos/packages.nix`.
+- Put machine-specific Home Manager programs in `local/home-manager/programs.nix`.
+- Put machine-specific Home Manager packages in `local/home-manager/packages.nix`.
 
 The repository ignores the operational local files by default and keeps only the templates and documentation tracked.

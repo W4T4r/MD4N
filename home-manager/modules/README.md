@@ -8,7 +8,7 @@ These modules are the main composition layer for the user environment and are in
 - `core.nix`
   Base Home Manager wiring such as username, home directory, XDG file placement, wallpaper installation, input method setup, cursor configuration, and activation hooks.
 - `programs.nix`
-  User-facing programs and program modules such as Git, Kitty, Starship, direnv, GitUI, Beyond Compare 5, and NvChad.
+  User-facing programs and program modules such as Git, Kitty, Starship, direnv, GitUI, and NvChad.
 - `services.nix`
   User-space services such as `gnome-keyring` and Hazkey integration.
 - `fonts.nix`

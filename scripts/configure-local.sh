@@ -454,14 +454,6 @@ print_virtualization_help() {
     detail "If disabled, virtualization modules and helper packages stay out of the system."
 }
 
-print_local_only_packages_help() {
-    detail "Local-only packages:"
-    detail "  - Beyond Compare 5: enable in local/home-manager/programs.nix when needed"
-    detail "  - OBS Studio: enable in local/home-manager/packages.nix when needed"
-    detail "  - DaVinci Resolve: enable in local/home-manager/packages.nix when needed"
-    detail "  - GlobalProtect OpenConnect: enable in local/nixos/packages.nix when needed"
-}
-
 prompt_bool_with_default() {
     local prompt=$1
     local default_value=$2
@@ -523,7 +515,6 @@ prompt_docs_tools() {
 prompt_optional_full_packages() {
     detail "Full profile optional packages:"
     detail "You will be asked about packages many users do not need."
-    print_local_only_packages_help
 
     prompt_ai_tools
     prompt_docs_tools
@@ -535,7 +526,6 @@ prompt_optional_full_packages_without_virtualization() {
     detail "Full profile optional packages:"
     detail "You will be asked about packages many users do not need."
     detail "Virtualization environment disabled: Podman Desktop, Distrobox, Distroshelf, and virt-manager stay disabled."
-    print_local_only_packages_help
 
     prompt_ai_tools
     prompt_docs_tools
@@ -865,7 +855,6 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
     detail "Dualboot : ${enable_dual_boot}"
     detail "Hibernate: ${enable_hibernate}"
     detail "Dotfiles : ${dotroot}"
-    detail "Local-only packages: Beyond Compare 5 -> local/home-manager/programs.nix, OBS Studio and DaVinci Resolve -> local/home-manager/packages.nix, GlobalProtect OpenConnect -> local/nixos/packages.nix"
 else
     # Automatic or non-interactive defaults
     if [[ "$AUTO_MODE" == "true" ]]; then
