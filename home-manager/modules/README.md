@@ -12,7 +12,7 @@ These modules are the main composition layer for the user environment and are in
 - `services.nix`
   User-space services such as `gnome-keyring` and Hazkey integration.
 - `fonts.nix`
-  Shared font wiring for the repository-managed GTK and Fcitx font files when `user.enableLocalFonts` enables the feature.
+  Font wiring for the local `home-manager/config/custom-fonts/` slot when `user.enableLocalFonts` enables the feature.
 - `packages/`
   Profile-specific package lists for `minimal` and `full`.
 

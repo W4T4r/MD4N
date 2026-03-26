@@ -9,6 +9,8 @@ local/
 
 # Linked config trees that intentionally keep local files beside shared config
 home-manager/config/gtk-3.0/bookmarks
+home-manager/config/custom-fonts/*
+!home-manager/config/custom-fonts/README.md
 home-manager/config/fish/md4n.generated.fish
 home-manager/config/fish/local.env.fish
 home-manager/config/fish/local.aliases.fish
