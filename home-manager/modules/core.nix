@@ -57,7 +57,7 @@ in {
       "kitty".source = ../config/kitty;
       "yazi".source = ../config/yazi;
 
-      "btop".source = ../config/btop;
+      "btop".source = symlink "${user.cfg}/btop";
       "fcitx5".source = ../config/fcitx5;
       "fish".source = symlink "${user.cfg}/fish";
       "gtk-3.0".source = ../config/gtk-3.0;
