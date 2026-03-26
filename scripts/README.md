@@ -6,12 +6,12 @@ Instead of expecting the user to remember raw `nixos-rebuild`, `home-manager`, g
 ## Main Flow
 
 - `install.sh`
-  Repository entrypoint. Starts the normal install chain and cleans transient setup leftovers.
+  Repository entrypoint. Starts the normal install chain, previews the local targets, and forwards into the interactive local setup flow.
 - `bootstrap.sh`
-  Pre-flight stage that checks whether the machine can proceed into local configuration.
+  Pre-flight stage that reviews the local targets, checks whether the machine can proceed into local configuration, enables flakes when needed, and then launches the interactive local setup.
 - `configure-local.sh`
   Main local-configuration console.
-  It collects machine-local answers, generates `user.local.nix`, writes helper files such as the browser launcher and Fish environment file, calls the dedicated Niri output generator, and can immediately apply the result.
+  It collects machine-local answers, generates `local/generated/user.nix`, ensures the local flake scaffold exists, writes helper files such as the browser launcher and Fish environment file, calls the dedicated Niri output generator, and can immediately apply the result through `local/flake.nix` when present.
 
 ## Daily Operation
 
@@ -22,7 +22,7 @@ Instead of expecting the user to remember raw `nixos-rebuild`, `home-manager`, g
 - `configure-niri-outputs.sh`
   Regenerates Niri display outputs in place.
 - `forge.sh`
-  Applies NixOS and or Home Manager changes from this repository.
+  Applies NixOS and or Home Manager changes from the active flake entrypoint, preferring `local/flake.nix` over the shared root flake.
 - `rollback.sh`
   Switches to an earlier NixOS or Home Manager generation.
 - `tune.sh`

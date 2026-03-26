@@ -1,5 +1,12 @@
 /user.local.nix
 /user.local.nix.bak
+/font.local.nix
+/font.local.nix.bak
+/local/flake.nix
+/local/flake.lock
+/local/generated/
+/local/home-manager/
+/local/nixos/
 /.direnv/
 /home-manager/config/niri/outputs.kdl
 /home-manager/config/niri/outputs.kdl.bak

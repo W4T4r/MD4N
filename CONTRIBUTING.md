@@ -6,7 +6,7 @@ MD4N is a personal NixOS and Home Manager configuration published as a reusable 
 
 ## Local Configuration Policy
 
-Do not ask users to hand-edit `user.local.nix`.
+Do not ask users to hand-edit `local/generated/user.nix`.
 
 - Machine-local values should be generated through `bash scripts/configure-local.sh`.
 - Shared defaults belong in `user.nix`.

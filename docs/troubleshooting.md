@@ -9,20 +9,20 @@ The main scripts involved are:
 - [scripts/configure-local.sh](../scripts/configure-local.sh)
 - [scripts/forge.sh](../scripts/forge.sh)
 
-## `user.local.nix` Is Missing
+## `local/generated/user.nix` Is Missing
 
 Symptoms:
 
-- `forge.sh` reports that it could not find `user.nix` or `user.local.nix`
+- `forge.sh` reports that it could not find `user.nix` or `local/generated/user.nix`
 - the machine-specific answers were never generated
 
 What to do:
 
 1. Run [scripts/configure-local.sh](../scripts/configure-local.sh) again.
 2. Check whether the script completed all the way through the generation step.
-3. Verify that `user.local.nix` now exists in the repository root.
+3. Verify that `local/generated/user.nix` now exists in the repository root.
 
-Do not hand-edit `user.local.nix` as a workaround.
+Do not hand-edit `local/generated/user.nix` as a workaround.
 MD4N treats it as generated local state.
 
 ## `nix flake` Does Not See Local Changes
@@ -30,7 +30,7 @@ MD4N treats it as generated local state.
 Symptoms:
 
 - a local file exists, but evaluation behaves as if it is missing
-- `user.local.nix` or other local state is ignored during apply
+- `local/generated/user.nix` or other local state is ignored during apply
 
 What to do:
 
@@ -39,8 +39,8 @@ Use a `path:` flake reference when applying from the local checkout.
 Example:
 
 ```bash
-sudo nixos-rebuild switch --flake path:/absolute/path/to/MD4N#<hostname>
-home-manager switch -b md4nbak --flake path:/absolute/path/to/MD4N#<username>
+sudo nixos-rebuild switch --flake path:/absolute/path/to/MD4N/local#<hostname>
+home-manager switch -b md4nbak --flake path:/absolute/path/to/MD4N/local#<username>
 ```
 
 The repository scripts already do this for you.
@@ -107,13 +107,13 @@ What to do:
 
 Symptoms:
 
-- local configuration fails while generating `nixos/hardware-configuration.nix`
+- local configuration fails while generating `local/nixos/hardware.nix`
 - `sudo` works, but the hardware file is not updated
 
 What to know:
 
 - local configuration uses `sudo nixos-generate-config --show-hardware-config`
-- the result is written back into [nixos/hardware-configuration.nix](../nixos/hardware-configuration.nix)
+- the result is written back into `local/nixos/hardware.nix`
 
 What to do:
 
@@ -173,7 +173,7 @@ Symptoms:
 What to do:
 
 1. Re-run the failing command directly to isolate whether the problem is in the wrapper or the underlying tool.
-2. Check whether `user.local.nix` was regenerated after your latest local configuration change.
+2. Check whether `local/generated/user.nix` was regenerated after your latest local configuration change.
 3. Confirm that you are applying from the repository you expect.
 4. Use the `path:` flake form if you are invoking the raw commands yourself.
 

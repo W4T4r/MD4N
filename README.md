@@ -29,7 +29,11 @@ This top-level README is the operator guide: how to install it, regenerate machi
 
 - This repository targets NixOS on `x86_64-linux`.
 - Shared defaults live in [user.nix](user.nix).
-- Machine-local answers are generated into `user.local.nix` by [scripts/configure-local.sh](scripts/configure-local.sh).
+- The root [flake.nix](flake.nix) is the shared base flake and exports reusable builders and modules.
+- Machine-local answers are generated into `local/generated/user.nix` by [scripts/configure-local.sh](scripts/configure-local.sh).
+- The active machine entrypoint can live in `local/flake.nix`, which wraps the shared root flake and can add private inputs.
+- Local Home Manager and NixOS overrides belong under `local/home-manager/` and `local/nixos/`.
+- `local/templates/` contains starter files that can be copied into the ignored local tree.
 - Generated local state should be regenerated through the scripts, not hand-edited.
 - `direnv` users can run `direnv allow` in the repository root to load the local validation toolchain automatically.
 
@@ -42,6 +46,8 @@ git clone https://github.com/W4T4r/MD4N
 cd MD4N
 bash install.sh
 ```
+
+`install.sh` and `bootstrap.sh` now guide the operator into the interactive local setup flow before `configure-local.sh` generates or updates the ignored `local/` tree.
 
 The normal flow is:
 
@@ -79,6 +85,12 @@ The main validation entrypoint remains:
 nix flake check
 ```
 
+If `local/flake.nix` exists, you can validate the machine-local entrypoint with:
+
+```bash
+nix flake check path:./local
+```
+
 ## Setup Behavior
 
 During setup, MD4N can run in guided mode or automatic mode.
@@ -91,7 +103,6 @@ Current profiles:
 
 - `minimal`: lighter baseline with virtualization disabled
 - `full`: default workstation profile
-- `personal`: fork-oriented personal all-in preset after explicit confirmation
 
 ## Updating Your Fork
 
@@ -108,9 +119,9 @@ git rebase upstream/main
 git push origin main
 ```
 
-When moving to another machine or changing local answers, regenerate the local state with [scripts/configure-local.sh](scripts/configure-local.sh) instead of editing `user.local.nix` manually.
+When moving to another machine or changing local answers, regenerate the local state with [scripts/configure-local.sh](scripts/configure-local.sh) instead of editing `local/generated/user.nix` manually.
 
-If you maintain a fork, keep your machine-specific or taste-specific additions inside the `personal` profile and related optional modules.
+If you maintain a fork, keep your machine-specific or taste-specific additions inside `local/` or in separate fork-specific modules instead of the shared defaults.
 
 ## Repository Guide
 
@@ -120,20 +131,22 @@ Use these documents when you want the detailed explanation for each area:
 - [NixOS Modules](nixos/modules/README.md): what each system module is responsible for
 - [Home Manager Overview](home-manager/README.md): user-level structure and how files are linked into the home directory
 - [Home Manager Modules](home-manager/modules/README.md): core, programs, services, fonts, and package layering
-- [Home Manager Package Profiles](home-manager/modules/packages/README.md): the role of `minimal`, `full`, and `personal`
+- [Home Manager Package Profiles](home-manager/modules/packages/README.md): the role of `minimal` and `full`
+- [Local Overrides](local/README.md): what belongs under the repository-local state directory
 - [Shared Config Tree](home-manager/config/README.md): what belongs under the repository-managed config tree
 - [Fcitx5 and Rime](home-manager/config/fcitx5/README.md): Japanese and Chinese input layout, shared profile, and Rime deployment
 - [Desktop Entry Overrides](home-manager/applications/README.md): how `.desktop` overrides are organized
 - [Wallpapers](home-manager/Wallpapers/README.md): wallpaper assets bundled with the setup
 - [Scripts](scripts/README.md): install, apply, rollback, and maintenance workflow
-- [Shared Nix Helpers](lib/README.md): how the merged `user` attribute set is built
+- [Shared Nix Helpers](lib/README.md): optional merge and normalization helpers for user settings
 - [Documentation Assets](assets/README.md): screenshots and other repository-owned media
 - [Troubleshooting](docs/troubleshooting.md): common install, setup, and apply failures
 - [Third-Party Notices](THIRD_PARTY_NOTICES.md): bundled assets that carry upstream attribution or license requirements
 
 ## Important Files
 
-- [flake.nix](flake.nix): flake entrypoint and outputs
+- [flake.nix](flake.nix): shared base flake, exported modules, and builder functions
+- [local/README.md](local/README.md): local entrypoint layout, templates, and ignored paths
 - [user.nix](user.nix): repository-safe shared defaults
 - [lib/user.nix](lib/user.nix): merge and normalization layer for user settings
 - [nixos/configuration.nix](nixos/configuration.nix): stable NixOS entrypoint

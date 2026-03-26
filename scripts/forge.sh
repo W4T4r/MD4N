@@ -69,14 +69,16 @@ print_dashboard_body() {
     local username=$2
     local hostname=$3
     local target_mode=$4
+    local flake_dir=$5
 
     rule
     printf '%b%s%b\n' "${CYAN}${BOLD}" "                  FORGE CONSOLE                  " "${NC}"
     rule
     summary_row "Repository" "${root_dir}"
     summary_row "Profile" "${username}@${hostname}"
+    summary_row "Flake" "${flake_dir}"
     summary_row "Target" "${target_mode}"
-    pad_dashboard_rows 3
+    pad_dashboard_rows 4
     rule
 }
 
@@ -85,13 +87,14 @@ print_dashboard() {
     local username=$2
     local hostname=$3
     local target_mode=$4
-    local apply_system_flag=$5
-    local apply_home_flag=$6
-    local apply_update_flag=$7
+    local flake_dir=$5
+    local apply_system_flag=$6
+    local apply_home_flag=$7
+    local apply_update_flag=$8
     printf '\033[H\033[2J'
     echo
     print_logo
-    print_dashboard_body "$root_dir" "$username" "$hostname" "$target_mode" "$apply_system_flag" "$apply_home_flag" "$apply_update_flag"
+    print_dashboard_body "$root_dir" "$username" "$hostname" "$target_mode" "$flake_dir" "$apply_system_flag" "$apply_home_flag" "$apply_update_flag"
 }
 
 select_menu() {
@@ -151,7 +154,7 @@ detect_user_field() {
 }
 
 choose_target() {
-    print_dashboard "$ROOT_DIR" "$USERNAME" "$HOSTNAME" "select target" "true" "true" "true"
+    print_dashboard "$ROOT_DIR" "$USERNAME" "$HOSTNAME" "select target" "$ACTIVE_FLAKE_DIR" "true" "true" "true"
     echo -e "  Menu       : ${DIM}choose configuration target${NC}\n"
     if ! select_menu "Forge" "40%" \
         "os      apply only the NixOS configuration" \
@@ -195,10 +198,10 @@ apply_system() {
 }
 
 apply_home() {
-    local root_dir=$1
+    local flake_dir=$1
     local username=$2
     local backup_flag=$3
-    local flake_ref="path:${root_dir}#${username}"
+    local flake_ref="path:${flake_dir}#${username}"
 
     require_command home-manager
 
@@ -216,12 +219,23 @@ apply_home() {
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+LOCAL_DIR="${ROOT_DIR}/local"
+LOCAL_GENERATED_DIR="${LOCAL_DIR}/generated"
+LOCAL_FLAKE_FILE="${LOCAL_DIR}/flake.nix"
 USER_NIX="${ROOT_DIR}/user.nix"
-USER_LOCAL_NIX="${ROOT_DIR}/user.local.nix"
+USER_LOCAL_NIX="${LOCAL_GENERATED_DIR}/user.nix"
+LEGACY_USER_LOCAL_NIX="${ROOT_DIR}/user.local.nix"
 ACTIVE_USER_NIX="$USER_NIX"
+ACTIVE_FLAKE_DIR="$ROOT_DIR"
 
 if [[ -f "$USER_LOCAL_NIX" ]]; then
     ACTIVE_USER_NIX="$USER_LOCAL_NIX"
+elif [[ -f "$LEGACY_USER_LOCAL_NIX" ]]; then
+    ACTIVE_USER_NIX="$LEGACY_USER_LOCAL_NIX"
+fi
+
+if [[ -f "$LOCAL_FLAKE_FILE" ]]; then
+    ACTIVE_FLAKE_DIR="$LOCAL_DIR"
 fi
 
 apply_system_flag=true
@@ -265,7 +279,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -f "${ROOT_DIR}/flake.nix" ]] || error "Could not find flake.nix in ${ROOT_DIR}"
-[[ -f "$ACTIVE_USER_NIX" ]] || error "Could not find user.nix or user.local.nix in ${ROOT_DIR}. Run setup first."
+[[ -f "$ACTIVE_USER_NIX" ]] || error "Could not find user.nix or local/generated/user.nix in ${ROOT_DIR}. Run setup first."
 require_command fzf
 
 USERNAME=$(detect_user_field "$ACTIVE_USER_NIX" "name")
@@ -297,18 +311,18 @@ if [[ -z "$target_mode" ]]; then
     esac
 fi
 
-print_dashboard "$ROOT_DIR" "$USERNAME" "$HOSTNAME" "$target_mode" "$apply_system_flag" "$apply_home_flag" "$apply_update_flag"
+print_dashboard "$ROOT_DIR" "$USERNAME" "$HOSTNAME" "$target_mode" "$ACTIVE_FLAKE_DIR" "$apply_system_flag" "$apply_home_flag" "$apply_update_flag"
 
 if [[ "$apply_update_flag" == "true" ]]; then
-    apply_update "$ROOT_DIR"
+    apply_update "$ACTIVE_FLAKE_DIR"
 fi
 
 if [[ "$apply_system_flag" == "true" ]]; then
-    apply_system "$ROOT_DIR" "$HOSTNAME"
+    apply_system "$ACTIVE_FLAKE_DIR" "$HOSTNAME"
 fi
 
 if [[ "$apply_home_flag" == "true" ]]; then
-    apply_home "$ROOT_DIR" "$USERNAME" "$home_backup"
+    apply_home "$ACTIVE_FLAKE_DIR" "$USERNAME" "$home_backup"
 fi
 
 echo ""
