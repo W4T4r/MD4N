@@ -22,8 +22,6 @@
     catppuccin-kvantum
     kitty-themes
     mpv
-    typora
-    vscode
     libsecret
   ];
 }
