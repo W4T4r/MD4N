@@ -1,17 +1,16 @@
 # Lib
 
 This directory holds small shared Nix helpers used by the rest of the repository.
-Right now the main purpose is to centralize how user configuration is assembled before it is handed to NixOS and Home Manager.
+Right now the main purpose is to centralize optional merge and normalization logic for user configuration data.
 
 ## Current Contents
 
 - `user.nix`
-  Loads the committed defaults from the repository root, optionally merges the generated `user.local.nix`, derives fallback paths such as `home`, `dotroot`, `cfg`, and `app`, and normalizes values like the GPU vendor.
+  Loads the committed defaults from the repository root, optionally merges the generated `local/generated/user.nix`, derives fallback paths such as `home`, `dotroot`, `cfg`, and `app`, normalizes values like the GPU vendor, and maps legacy local keys to the current shape.
 
 ## Why It Matters
 
-Without this layer, both NixOS and Home Manager would need to repeat the same merge and normalization logic.
-Keeping it here means the rest of the configuration can treat `user` as a stable interface instead of caring where each value came from.
+When a caller wants repository defaults plus local generated values, this layer keeps the merge logic in one place instead of repeating it.
 
 ## Editing Guidance
 

@@ -9,8 +9,8 @@ Each file owns one part of the system so the top-level host definition stays rea
   Base operating system settings.
   This includes hostname, locale, time zone, user creation, shell selection, Nix feature flags, unfree package allowance, and suspend or hibernate behavior.
 - `boot.nix`
-  Bootloader and swap configuration.
-  In the current setup this means GRUB on EFI systems, optional OS prober support for dual boot, and the shared swapfile definition.
+  Shared bootloader configuration.
+  In the current setup this means GRUB on EFI systems and optional OS prober support for dual boot.
 - `desktop.nix`
   Desktop stack and multimedia plumbing.
   This enables Bluetooth, GDM on Wayland, Niri, Xwayland support, a trimmed GNOME environment, PipeWire, and RTKit.
@@ -23,7 +23,7 @@ Each file owns one part of the system so the top-level host definition stays rea
 
 ## Design Intent
 
-The repository uses generated user settings to decide which optional behavior should be active.
+The repository uses the `user` attribute set passed in by the active flake entrypoint to decide which optional behavior should be active.
 That means these modules should generally consume `user` flags rather than invent separate configuration switches unless a new shared concept is being introduced.
 
 ## Editing Guidance

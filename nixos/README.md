@@ -7,18 +7,17 @@ It is responsible for host configuration such as boot, users, services, desktop 
 
 - `configuration.nix`
   Stable NixOS entrypoint used by the flake output.
-  Its job is mainly to import the internal modules and decide whether optional pieces such as virtualization should be included.
+  Its job is mainly to import the internal shared modules and decide whether optional pieces such as virtualization should be included.
 - `hardware-configuration.nix`
-  Hardware-specific settings generated in the usual NixOS style.
-  This is the one file in this tree that is expected to be strongly machine-specific.
+  Shared fallback hardware definition kept for compatibility and template seeding.
+  The active local entrypoint can instead import `local/nixos/hardware.nix`.
 - `modules/`
   System modules split by responsibility so the entrypoint can stay thin.
 
 ## How It Connects To The Rest Of The Repo
 
-`flake.nix` exports a NixOS configuration keyed by the generated hostname.
-That configuration imports `configuration.nix`, which then consumes the merged `user` settings from [`lib/user.nix`](../lib/user.nix).
-In other words, this directory is where the machine-level answers collected during setup actually become system behavior.
+`flake.nix` exports the shared NixOS modules plus a default configuration keyed by the shared default hostname.
+The local operational flake can consume those shared modules and add machine-specific imports such as `local/nixos/hardware.nix` and `local/nixos/swap.nix`.
 
 ## Editing Guidance
 

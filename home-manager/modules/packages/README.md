@@ -9,8 +9,6 @@ The profile is chosen during `scripts/configure-local.sh` and then imported by `
   Baseline user package set with a lighter footprint.
 - `full.nix`
   Default workstation-oriented package set.
-- `personal.nix`
-  Fork-oriented personal all-in profile with a broad package set enabled by design.
 
 ## Why This Exists
 

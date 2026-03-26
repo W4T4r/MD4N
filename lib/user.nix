@@ -1,9 +1,17 @@
 let
   base = import ../user.nix;
-  localPath = ../user.local.nix;
-  local =
+  localPath = ../local/generated/user.nix;
+  legacyLocalPath = ../local/user.nix;
+  legacyRootLocalPath = ../user.local.nix;
+  selectedLocalPath =
     if builtins.pathExists localPath
-    then import localPath
+    then localPath
+    else if builtins.pathExists legacyLocalPath
+    then legacyLocalPath
+    else legacyRootLocalPath;
+  local =
+    if builtins.pathExists selectedLocalPath
+    then import selectedLocalPath
     else {};
   normalizeGpuVendor = value: let
     normalized =
@@ -80,6 +88,20 @@ let
     else "generic";
 
   merged = base // local;
+  packageProfile =
+    if (merged.packageProfile or "full") == "personal"
+    then "full"
+    else merged.packageProfile or "full";
+  enableLocalFonts =
+    if local ? enableLocalFonts
+    then local.enableLocalFonts
+    else if local ? enablePersonalFonts
+    then local.enablePersonalFonts
+    else if base ? enableLocalFonts
+    then base.enableLocalFonts
+    else if base ? enablePersonalFonts
+    then base.enablePersonalFonts
+    else false;
   dotroot =
     if local ? dotroot
     then local.dotroot
@@ -114,5 +136,6 @@ in
       else if base ? app
       then base.app
       else "${homemanager}/applications";
+    inherit enableLocalFonts packageProfile;
     gpuVendor = normalizeGpuVendor (merged.gpuVendor or "generic");
   }

@@ -55,7 +55,7 @@ print_banner() {
     summary_row "Next" "forge.sh (optional)"
     summary_row "Flow" "install.sh -> bootstrap.sh -> configure-local.sh"
     summary_row "user.nix" "${USER_NIX}"
-    summary_row "local.nix" "${USER_LOCAL_NIX}"
+    summary_row "local/generated" "${USER_LOCAL_NIX}"
     rule
 }
 
@@ -67,9 +67,14 @@ is_interactive() {
 # --- Initialization & Pre-flight Checks ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+LOCAL_DIR="${ROOT_DIR}/local"
+LOCAL_GENERATED_DIR="${LOCAL_DIR}/generated"
+LOCAL_HOME_MANAGER_DIR="${LOCAL_DIR}/home-manager"
+LOCAL_NIXOS_DIR="${LOCAL_DIR}/nixos"
+LOCAL_TEMPLATE_DIR="${LOCAL_DIR}/templates"
+LOCAL_FLAKE_FILE="${LOCAL_DIR}/flake.nix"
 USER_NIX="${ROOT_DIR}/user.nix"
-USER_LOCAL_NIX="${ROOT_DIR}/user.local.nix"
-USER_PACKAGE_PROFILE="personal"
+USER_LOCAL_NIX="${LOCAL_GENERATED_DIR}/user.nix"
 FORGE_SCRIPT="${ROOT_DIR}/scripts/forge.sh"
 CONFIGURE_NIRI_OUTPUTS_SCRIPT="${ROOT_DIR}/scripts/configure-niri-outputs.sh"
 
@@ -297,7 +302,7 @@ validate_git_email() {
 }
 
 validate_package_profile() {
-    [[ "$1" == "minimal" || "$1" == "full" || "$1" == "$USER_PACKAGE_PROFILE" ]]
+    [[ "$1" == "minimal" || "$1" == "full" ]]
 }
 
 validate_gpu_vendor() {
@@ -331,7 +336,6 @@ print_package_profile_choices() {
     detail "Package profiles:"
     detail "  - minimal : lighter package set"
     detail "  - full    : default workstation profile"
-    detail "  - ${USER_PACKAGE_PROFILE} : fork-oriented personal all-in profile"
 }
 
 print_gpu_vendor_choices() {
@@ -363,55 +367,89 @@ print_timezone_help() {
 }
 
 print_font_preferences_help() {
-    detail "Personal font preferences toggle the dedicated personal font module."
-    detail "This is intentionally a personal override, not a repository-wide default."
-    detail "Edit: ${ROOT_DIR}/home-manager/modules/fonts.nix"
+    detail "Local font preferences toggle the dedicated local font module."
+    detail "This stays outside the shared repository defaults."
+    detail "Edit: ${ROOT_DIR}/local/home-manager/fonts.nix"
     detail "To change the on/off state later, re-run: bash ${ROOT_DIR}/scripts/configure-local.sh"
+}
+
+copy_template_if_missing() {
+    local source=$1
+    local target=$2
+
+    [[ -f "$source" ]] || error "Missing local template: $source"
+
+    if [[ ! -e "$target" ]]; then
+        mkdir -p "$(dirname "$target")"
+        cp "$source" "$target"
+        detail "Created local scaffold: ${target}"
+    fi
+}
+
+sync_local_flake() {
+    local escaped_root=""
+    local temp_file=""
+
+    [[ -f "${LOCAL_TEMPLATE_DIR}/flake.nix" ]] || error "Missing local template: ${LOCAL_TEMPLATE_DIR}/flake.nix"
+
+    escaped_root=$(printf '%s\n' "$ROOT_DIR" | sed 's/[&|]/\\&/g')
+
+    if [[ ! -e "$LOCAL_FLAKE_FILE" ]]; then
+        mkdir -p "$(dirname "$LOCAL_FLAKE_FILE")"
+        sed "s|__MD4N_ROOT__|${escaped_root}|g" "${LOCAL_TEMPLATE_DIR}/flake.nix" > "$LOCAL_FLAKE_FILE"
+        detail "Created local scaffold: ${LOCAL_FLAKE_FILE}"
+        return 0
+    fi
+
+    temp_file=$(mktemp)
+    sed \
+        -e "s|path:\\.\\.|path:${escaped_root}|g" \
+        -e "s|__MD4N_ROOT__|${escaped_root}|g" \
+        "$LOCAL_FLAKE_FILE" > "$temp_file"
+
+    if ! cmp -s "$LOCAL_FLAKE_FILE" "$temp_file"; then
+        mv "$temp_file" "$LOCAL_FLAKE_FILE"
+        detail "Updated local flake root input: ${LOCAL_FLAKE_FILE}"
+    else
+        rm -f "$temp_file"
+    fi
+}
+
+sync_local_hardware_stub() {
+    local target="${LOCAL_NIXOS_DIR}/hardware.nix"
+    local template="${LOCAL_TEMPLATE_DIR}/nixos/hardware.nix"
+
+    [[ -f "$template" ]] || error "Missing local template: $template"
+
+    if [[ ! -e "$target" ]]; then
+        mkdir -p "$(dirname "$target")"
+        cp "$template" "$target"
+        detail "Created local scaffold: ${target}"
+        return 0
+    fi
+
+    if grep -Eq '__MD4N_ROOT__|hardware-configuration\.nix' "$target"; then
+        cp "$template" "$target"
+        detail "Updated local hardware fallback import: ${target}"
+    fi
+}
+
+ensure_local_scaffold() {
+    mkdir -p "$LOCAL_GENERATED_DIR" "$LOCAL_HOME_MANAGER_DIR" "$LOCAL_NIXOS_DIR"
+
+    sync_local_flake
+    copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/home-manager/default.nix" "${LOCAL_HOME_MANAGER_DIR}/default.nix"
+    copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/home-manager/packages.nix" "${LOCAL_HOME_MANAGER_DIR}/packages.nix"
+    copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/home-manager/fonts.nix" "${LOCAL_HOME_MANAGER_DIR}/fonts.nix"
+    copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/nixos/default.nix" "${LOCAL_NIXOS_DIR}/default.nix"
+    copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/nixos/swap.nix" "${LOCAL_NIXOS_DIR}/swap.nix"
+    sync_local_hardware_stub
 }
 
 print_virtualization_help() {
     detail "Virtualization environment:"
     detail "Enables Podman, libvirt, KVM group membership, and related desktop tools."
     detail "If disabled, virtualization modules and helper packages stay out of the system."
-}
-
-confirm_user_profile() {
-    warn "The '${USER_PACKAGE_PROFILE}' profile is the personal all-in local configuration."
-    warn "It enables a large number of packages and settings, including many tools you may never use."
-    read -r -p "Do you really want to apply the '${USER_PACKAGE_PROFILE}' profile and skip the remaining optional prompts? [y/N] " confirm_max
-
-    if [[ ! "$confirm_max" =~ ^[yY]$ ]]; then
-        info "User profile cancelled."
-        exit 0
-    fi
-}
-
-apply_user_profile_defaults() {
-    enable_custom_fonts="true"
-    enable_virtualization="true"
-    enable_bcompare5="true"
-    enable_vesktop="true"
-    enable_cava="true"
-    enable_gemini_cli="true"
-    enable_codex="true"
-    enable_claude_code="true"
-    enable_google_chrome="true"
-    enable_thunderbird="true"
-    enable_obs_studio="true"
-    enable_davinci_resolve="true"
-    enable_zotero="true"
-    enable_podman_desktop="true"
-    enable_distrobox="true"
-    enable_distroshelf="true"
-    enable_texlive_full="true"
-    enable_global_protect="true"
-    enable_virt_manager="true"
-    enable_ollama="true"
-    enable_steam="true"
-    gpu_vendor=$(normalize_gpu_vendor "$DEFAULT_GPU_VENDOR")
-    enable_fingerprint="true"
-    enable_dual_boot="true"
-    enable_hibernate="false"
 }
 
 prompt_bool_with_default() {
@@ -571,9 +609,11 @@ if [[ ! -f "${ROOT_DIR}/flake.nix" ]]; then
     error "Could not find flake.nix in ${ROOT_DIR}. Please run this script from the repository root."
 fi
 
+ensure_local_scaffold
+
 # 2. Existing Configuration Check (The Confirmation Request)
 if [[ -f "$USER_LOCAL_NIX" ]] && is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
-    echo -e "${YELLOW}Existing user.local.nix found.${NC}"
+    echo -e "${YELLOW}Existing local/generated/user.nix found.${NC}"
     read -r -p "Do you really want to run the local configuration again? This will overwrite your settings. [y/N] " confirm
     if [[ ! "$confirm" =~ ^[yY]$ ]]; then
         info "Setup cancelled by user."
@@ -581,7 +621,7 @@ if [[ -f "$USER_LOCAL_NIX" ]] && is_interactive && [[ "$AUTO_MODE" == "false" ]]
     fi
 fi
 
-# --- 1. User Configuration (user.local.nix) ---
+# --- 1. User Configuration (local/generated/user.nix) ---
 step "Collecting user configuration"
 
 dotroot="$ROOT_DIR"
@@ -651,116 +691,111 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
         error "Invalid package profile: $package_profile"
     fi
 
-    if [[ "$package_profile" == "$USER_PACKAGE_PROFILE" ]]; then
-        confirm_user_profile
-        apply_user_profile_defaults
-    else
-        print_font_preferences_help
-        enable_custom_fonts=$(prompt_bool_with_default "Enable personal font preferences?" "false")
+    print_font_preferences_help
+    enable_custom_fonts=$(prompt_bool_with_default "Enable local font preferences?" "false")
 
-        enable_virtualization="true"
-        if [[ "$package_profile" != "minimal" ]]; then
-            print_virtualization_help
-            enable_virtualization=$(prompt_bool_with_default "Enable virtualization environment?" "true")
-        fi
+    enable_virtualization="true"
+    if [[ "$package_profile" != "minimal" ]]; then
+        print_virtualization_help
+        enable_virtualization=$(prompt_bool_with_default "Enable virtualization environment?" "true")
+    fi
 
-        enable_bcompare5="true"
-        enable_vesktop="true"
-        enable_cava="true"
-        enable_gemini_cli="true"
-        enable_codex="true"
-        enable_claude_code="true"
-        enable_google_chrome="true"
-        enable_thunderbird="true"
-        enable_obs_studio="true"
-        enable_davinci_resolve="true"
-        enable_zotero="true"
-        enable_podman_desktop="true"
-        enable_distrobox="true"
-        enable_distroshelf="true"
-        enable_texlive_full="true"
-        enable_global_protect="true"
-        enable_virt_manager="true"
-        enable_ollama="true"
-        enable_steam="true"
-
-        if [[ "$package_profile" == "full" ]]; then
-            if [[ "$enable_virtualization" == "true" ]]; then
-                prompt_optional_full_packages
-            else
-                detail "Virtualization environment disabled: skipping Podman, Distrobox, Distroshelf, and virt-manager prompts."
-                enable_bcompare5=$(prompt_bool_with_default "Include Beyond Compare 5 integration?" "true")
-                detail "Google Chrome note: if you sign in with fprintd-based login, Chrome may still ask for your password."
-                enable_google_chrome=$(prompt_bool_with_default "Include Google Chrome?" "true")
-                enable_thunderbird=$(prompt_bool_with_default "Include Thunderbird?" "true")
-                enable_obs_studio=$(prompt_bool_with_default "Include OBS Studio?" "true")
-                enable_davinci_resolve=$(prompt_bool_with_default "Include DaVinci Resolve?" "true")
-                enable_zotero=$(prompt_bool_with_default "Include Zotero?" "true")
-                enable_texlive_full=$(prompt_bool_with_default "Include TeX Live Full?" "true")
-                enable_global_protect=$(prompt_bool_with_default "Include GlobalProtect OpenConnect?" "true")
-                enable_podman_desktop="false"
-                enable_distrobox="false"
-                enable_distroshelf="false"
-                enable_virt_manager="false"
-            fi
-        elif [[ "$package_profile" == "minimal" ]]; then
     enable_bcompare5="true"
-            enable_vesktop="false"
-            enable_cava="false"
-            enable_gemini_cli="false"
-            enable_codex="false"
-            enable_claude_code="false"
-            enable_google_chrome="false"
-            enable_thunderbird="false"
-            enable_obs_studio="false"
-            enable_davinci_resolve="false"
-            enable_zotero="false"
-            enable_podman_desktop="false"
-            enable_distrobox="false"
-            enable_distroshelf="false"
-            enable_texlive_full="false"
+    enable_vesktop="true"
+    enable_cava="true"
+    enable_gemini_cli="true"
+    enable_codex="true"
+    enable_claude_code="true"
+    enable_google_chrome="true"
+    enable_thunderbird="true"
+    enable_obs_studio="true"
+    enable_davinci_resolve="true"
+    enable_zotero="true"
+    enable_podman_desktop="true"
+    enable_distrobox="true"
+    enable_distroshelf="true"
+    enable_texlive_full="true"
     enable_global_protect="true"
-            enable_virtualization="false"
-            enable_virt_manager="false"
-            enable_ollama="false"
-            enable_steam="false"
-        elif [[ "$enable_virtualization" != "true" ]]; then
+    enable_virt_manager="true"
+    enable_ollama="true"
+    enable_steam="true"
+
+    if [[ "$package_profile" == "full" ]]; then
+        if [[ "$enable_virtualization" == "true" ]]; then
+            prompt_optional_full_packages
+        else
+            detail "Virtualization environment disabled: skipping Podman, Distrobox, Distroshelf, and virt-manager prompts."
+            enable_bcompare5=$(prompt_bool_with_default "Include Beyond Compare 5 integration?" "true")
+            detail "Google Chrome note: if you sign in with fprintd-based login, Chrome may still ask for your password."
+            enable_google_chrome=$(prompt_bool_with_default "Include Google Chrome?" "true")
+            enable_thunderbird=$(prompt_bool_with_default "Include Thunderbird?" "true")
+            enable_obs_studio=$(prompt_bool_with_default "Include OBS Studio?" "true")
+            enable_davinci_resolve=$(prompt_bool_with_default "Include DaVinci Resolve?" "true")
+            enable_zotero=$(prompt_bool_with_default "Include Zotero?" "true")
+            enable_texlive_full=$(prompt_bool_with_default "Include TeX Live Full?" "true")
+            enable_global_protect=$(prompt_bool_with_default "Include GlobalProtect OpenConnect?" "true")
             enable_podman_desktop="false"
             enable_distrobox="false"
             enable_distroshelf="false"
             enable_virt_manager="false"
         fi
+    elif [[ "$package_profile" == "minimal" ]]; then
+        enable_bcompare5="false"
+        enable_vesktop="false"
+        enable_cava="false"
+        enable_gemini_cli="false"
+        enable_codex="false"
+        enable_claude_code="false"
+        enable_google_chrome="false"
+        enable_thunderbird="false"
+        enable_obs_studio="false"
+        enable_davinci_resolve="false"
+        enable_zotero="false"
+        enable_podman_desktop="false"
+        enable_distrobox="false"
+        enable_distroshelf="false"
+        enable_texlive_full="false"
+        enable_global_protect="false"
+        enable_virtualization="false"
+        enable_virt_manager="false"
+        enable_ollama="false"
+        enable_steam="false"
+    elif [[ "$enable_virtualization" != "true" ]]; then
+        enable_podman_desktop="false"
+        enable_distrobox="false"
+        enable_distroshelf="false"
+        enable_virt_manager="false"
+    fi
 
-        print_gpu_vendor_choices
-        read -r -p "Enter your GPU vendor [$DEFAULT_GPU_VENDOR]: " gpu_vendor
-        gpu_vendor=${gpu_vendor:-$DEFAULT_GPU_VENDOR}
-        gpu_vendor=$(normalize_gpu_vendor "$gpu_vendor")
+    print_gpu_vendor_choices
+    read -r -p "Enter your GPU vendor [$DEFAULT_GPU_VENDOR]: " gpu_vendor
+    gpu_vendor=${gpu_vendor:-$DEFAULT_GPU_VENDOR}
+    gpu_vendor=$(normalize_gpu_vendor "$gpu_vendor")
 
-        if ! validate_gpu_vendor "$gpu_vendor"; then
-            error "Invalid GPU vendor: $gpu_vendor"
-        fi
+    if ! validate_gpu_vendor "$gpu_vendor"; then
+        error "Invalid GPU vendor: $gpu_vendor"
+    fi
 
-        read -r -p "Enable fingerprint authentication? [y/N] " enable_fingerprint_confirm
-        if [[ "$enable_fingerprint_confirm" =~ ^[yY]$ ]]; then
-            enable_fingerprint="true"
-            detail "Fingerprint enrollment command: fprintd-enroll ${username}"
+    read -r -p "Enable fingerprint authentication? [y/N] " enable_fingerprint_confirm
+    if [[ "$enable_fingerprint_confirm" =~ ^[yY]$ ]]; then
+        enable_fingerprint="true"
+        detail "Fingerprint enrollment command: fprintd-enroll ${username}"
+    else
+        enable_fingerprint="false"
+    fi
+
+    read -r -p "Enable dual-boot support (GRUB os-prober)? [y/N] " enable_dual_boot_confirm
+    if [[ "$enable_dual_boot_confirm" =~ ^[yY]$ ]]; then
+        enable_dual_boot="true"
+        enable_hibernate="false"
+        info "Dual-boot support enabled. Hibernate is forced off to avoid resume conflicts."
+    else
+        enable_dual_boot="false"
+        read -r -p "Enable hibernate and hybrid-sleep? [y/N] " enable_hibernate_confirm
+        if [[ "$enable_hibernate_confirm" =~ ^[yY]$ ]]; then
+            enable_hibernate="true"
         else
-            enable_fingerprint="false"
-        fi
-
-        read -r -p "Enable dual-boot support (GRUB os-prober)? [y/N] " enable_dual_boot_confirm
-        if [[ "$enable_dual_boot_confirm" =~ ^[yY]$ ]]; then
-            enable_dual_boot="true"
             enable_hibernate="false"
-            info "Dual-boot support enabled. Hibernate is forced off to avoid resume conflicts."
-        else
-            enable_dual_boot="false"
-            read -r -p "Enable hibernate and hybrid-sleep? [y/N] " enable_hibernate_confirm
-            if [[ "$enable_hibernate_confirm" =~ ^[yY]$ ]]; then
-                enable_hibernate="true"
-            else
-                enable_hibernate="false"
-            fi
         fi
     fi
 
@@ -826,10 +861,6 @@ else
         if ! validate_package_profile "$package_profile"; then
             error "Invalid package profile: $package_profile"
         fi
-
-        if [[ "$package_profile" == "$USER_PACKAGE_PROFILE" ]]; then
-            confirm_user_profile
-        fi
     else
         package_profile="full"
     fi
@@ -888,7 +919,7 @@ else
         enable_global_protect="false"
         enable_ollama="false"
         enable_steam="false"
-    elif [[ "$AUTO_MODE" == "true" && "$package_profile" != "$USER_PACKAGE_PROFILE" ]]; then
+    elif [[ "$AUTO_MODE" == "true" ]]; then
         print_virtualization_help
         enable_virtualization=$(prompt_bool_with_default "Enable virtualization environment?" "true")
 
@@ -909,8 +940,6 @@ else
                 enable_virt_manager="false"
             fi
         fi
-    elif [[ "$package_profile" == "$USER_PACKAGE_PROFILE" ]]; then
-        apply_user_profile_defaults
     fi
 
     if is_interactive; then
@@ -1022,14 +1051,16 @@ if ! validate_bool_string "$enable_hibernate"; then
     error "Invalid hibernate flag: $enable_hibernate"
 fi
 
-# Backup existing user.local.nix
+mkdir -p "$LOCAL_DIR"
+
+# Backup existing local/generated/user.nix
 if [[ -f "$USER_LOCAL_NIX" ]]; then
-    warn "Creating backup of user.local.nix..."
+    warn "Creating backup of local/generated/user.nix..."
     mv "$USER_LOCAL_NIX" "${USER_LOCAL_NIX}.bak"
     detail "Backup path: ${USER_LOCAL_NIX}.bak"
 fi
 
-info "Generating user.local.nix..."
+info "Generating local/generated/user.nix..."
 cat <<EOF > "$USER_LOCAL_NIX"
 # ███╗   ███╗██████╗ ██╗  ██╗███╗   ██╗
 # ████╗ ████║██╔══██╗██║  ██║████╗  ██║
@@ -1038,7 +1069,7 @@ cat <<EOF > "$USER_LOCAL_NIX"
 # ██║ ╚═╝ ██║██████╔╝     ██║██║ ╚████║
 # ╚═╝     ╚═╝╚═════╝      ╚═╝╚═╝  ╚═══╝
 #
-# user.local.nix - Auto-generated by configure-local.sh
+# local/generated/user.nix - Auto-generated by configure-local.sh
 
 let
   name = "$(escape_nix_string "$username")";
@@ -1049,7 +1080,7 @@ let
   gitName = "$(escape_nix_string "$git_name")";
   gitEmail = "$(escape_nix_string "$git_email")";
   packageProfile = "$(escape_nix_string "$package_profile")";
-  enablePersonalFonts = $(render_nix_bool "$enable_custom_fonts");
+  enableLocalFonts = $(render_nix_bool "$enable_custom_fonts");
   enableBcompare5 = $(render_nix_bool "$enable_bcompare5");
   enableVesktop = $(render_nix_bool "$enable_vesktop");
   enableCava = $(render_nix_bool "$enable_cava");
@@ -1085,7 +1116,7 @@ let
   niriOutputsFile = "\${home}/.config/niri/outputs.local.kdl";
 in
 {
-  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enablePersonalFonts enableBcompare5 enableVesktop enableCava enableGeminiCli enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtualization enableVirtManager enableOllama enableSteam browser gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile niriBrowserScript niriOutputsFile;
+  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableLocalFonts enableBcompare5 enableVesktop enableCava enableGeminiCli enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtualization enableVirtManager enableOllama enableSteam browser gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile niriBrowserScript niriOutputsFile;
 }
 EOF
 
@@ -1099,7 +1130,7 @@ bash "$CONFIGURE_NIRI_OUTPUTS_SCRIPT" --user "$username"
 
 # --- 2. Hardware Configuration ---
 step "Preparing hardware configuration"
-TARGET_HW_CONFIG="${ROOT_DIR}/nixos/hardware-configuration.nix"
+TARGET_HW_CONFIG="${LOCAL_NIXOS_DIR}/hardware.nix"
 TARGET_HW_CONFIG_BAK="${TARGET_HW_CONFIG}.bak"
 
 if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
@@ -1140,19 +1171,19 @@ if [[ "$AUTO_MODE" == "true" ]]; then
     detail "Profile      : ${package_profile}"
     detail "Virtual      : ${enable_virtualization}"
     detail "Fingerprint  : ${enable_fingerprint}"
-    detail "This will run: sudo nixos-rebuild switch --flake path:${ROOT_DIR}#${hostname_value}"
-    detail "Then it will run: home-manager switch -b md4nbak --flake path:${ROOT_DIR}#${username}"
+    detail "This will run: sudo nixos-rebuild switch --flake path:${LOCAL_DIR}#${hostname_value}"
+    detail "Then it will run: home-manager switch -b md4nbak --flake path:${LOCAL_DIR}#${username}"
     
     # Refresh sudo credentials
     sudo -v
     
     # 1. Apply NixOS
     info "Applying NixOS configuration..."
-    sudo nixos-rebuild switch --flake "path:${ROOT_DIR}#${hostname_value}"
-    
+    sudo nixos-rebuild switch --flake "path:${LOCAL_DIR}#${hostname_value}"
+
     # 2. Apply Home Manager
     info "Applying Home Manager configuration..."
-    home-manager switch -b md4nbak --flake "path:${ROOT_DIR}#${username}"
+    home-manager switch -b md4nbak --flake "path:${LOCAL_DIR}#${username}"
     
     success "Configuration applied successfully."
 

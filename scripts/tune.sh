@@ -23,8 +23,11 @@ MENU_SELECTION=""
 # --- Globals ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+LOCAL_DIR="${ROOT_DIR}/local"
+LOCAL_GENERATED_DIR="${LOCAL_DIR}/generated"
 USER_NIX="${ROOT_DIR}/user.nix"
-USER_LOCAL_NIX="${ROOT_DIR}/user.local.nix"
+USER_LOCAL_NIX="${LOCAL_GENERATED_DIR}/user.nix"
+LEGACY_USER_LOCAL_NIX="${ROOT_DIR}/user.local.nix"
 USERNAME="User"
 CHOSEN_GENERATIONS=""
 USER_PROFILE_SENTINEL="__MD4N_USER_PROFILE__"
@@ -32,6 +35,8 @@ USER_PROFILE_SENTINEL="__MD4N_USER_PROFILE__"
 # --- Initialization ---
 if [[ -f "$USER_LOCAL_NIX" ]]; then
     USERNAME=$(awk -F'"' '/^[[:space:]]*name[[:space:]]*=/ {print $2; exit}' "$USER_LOCAL_NIX")
+elif [[ -f "$LEGACY_USER_LOCAL_NIX" ]]; then
+    USERNAME=$(awk -F'"' '/^[[:space:]]*name[[:space:]]*=/ {print $2; exit}' "$LEGACY_USER_LOCAL_NIX")
 elif [[ -f "$USER_NIX" ]]; then
     USERNAME=$(awk -F'"' '/^[[:space:]]*name[[:space:]]*=/ {print $2; exit}' "$USER_NIX")
 fi

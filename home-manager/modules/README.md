@@ -12,13 +12,13 @@ These modules are the main composition layer for the user environment and are in
 - `services.nix`
   User-space services such as `gnome-keyring` and Hazkey integration.
 - `fonts.nix`
-  Optional personal font defaults enabled only when the generated local settings opt into that personal font module.
+  Shared font wiring for the repository-managed GTK and Fcitx font files when `user.enableLocalFonts` enables the feature.
 - `packages/`
-  Profile-specific package lists for `minimal`, `full`, and `personal`.
+  Profile-specific package lists for `minimal` and `full`.
 
 ## Design Notes
 
-These modules are driven by the merged `user` attribute set built in [`lib/user.nix`](../../lib/user.nix).
-That means feature gates should usually depend on generated user settings rather than on ad hoc local edits.
+These modules consume the `user` attribute set passed in by the active flake entrypoint.
+That value can come from shared defaults alone or from the optional merge layer in [`lib/user.nix`](../../lib/user.nix).
 
 Keep modules focused. If a file starts mixing XDG links, package selection, and service toggles all at once, it probably wants to be split further.

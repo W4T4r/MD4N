@@ -59,6 +59,7 @@ print_dashboard_body() {
     local root_dir=$1
     local username=$2
     local hostname=$3
+    local flake_dir=$4
 
     rule
     printf '%b%s%b\n' "${CYAN}${BOLD}" "                  MD4N TOP                       " "${NC}"
@@ -66,7 +67,8 @@ print_dashboard_body() {
     summary_row "Repository" "${root_dir}"
     summary_row "User"       "${username}"
     summary_row "Host"       "${hostname}"
-    pad_dashboard_rows 3
+    summary_row "Flake"      "${flake_dir}"
+    pad_dashboard_rows 4
     rule
 }
 
@@ -74,11 +76,12 @@ print_dashboard() {
     local root_dir=$1
     local username=$2
     local hostname=$3
+    local flake_dir=$4
 
     printf '\033[H\033[2J'
     echo
     print_logo
-    print_dashboard_body "$root_dir" "$username" "$hostname"
+    print_dashboard_body "$root_dir" "$username" "$hostname" "$flake_dir"
 }
 
 select_menu() {
@@ -121,12 +124,23 @@ detect_user_field() {
 # --- Main Logic ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+LOCAL_DIR="${ROOT_DIR}/local"
+LOCAL_GENERATED_DIR="${LOCAL_DIR}/generated"
+LOCAL_FLAKE_FILE="${LOCAL_DIR}/flake.nix"
 USER_NIX="${ROOT_DIR}/user.nix"
-USER_LOCAL_NIX="${ROOT_DIR}/user.local.nix"
+USER_LOCAL_NIX="${LOCAL_GENERATED_DIR}/user.nix"
+LEGACY_USER_LOCAL_NIX="${ROOT_DIR}/user.local.nix"
 ACTIVE_USER_NIX="$USER_NIX"
+ACTIVE_FLAKE_DIR="$ROOT_DIR"
 
 if [[ -f "$USER_LOCAL_NIX" ]]; then
     ACTIVE_USER_NIX="$USER_LOCAL_NIX"
+elif [[ -f "$LEGACY_USER_LOCAL_NIX" ]]; then
+    ACTIVE_USER_NIX="$LEGACY_USER_LOCAL_NIX"
+fi
+
+if [[ -f "$LOCAL_FLAKE_FILE" ]]; then
+    ACTIVE_FLAKE_DIR="$LOCAL_DIR"
 fi
 
 USERNAME=$(detect_user_field "$ACTIVE_USER_NIX" "name")
@@ -137,7 +151,7 @@ HOSTNAME=${HOSTNAME:-$(hostname)}
 command -v fzf >/dev/null 2>&1 || error "Missing required command: fzf"
 
 while true; do
-    print_dashboard "$ROOT_DIR" "$USERNAME" "$HOSTNAME"
+    print_dashboard "$ROOT_DIR" "$USERNAME" "$HOSTNAME" "$ACTIVE_FLAKE_DIR"
     echo -e "  Menu       : ${DIM}choose a tool to launch${NC}\n"
 
     options=(

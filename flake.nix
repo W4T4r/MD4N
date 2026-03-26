@@ -55,10 +55,56 @@
     bcompare5,
     ...
   }: let
-    lib = nixpkgs.lib;
-    user = import ./lib/user.nix;
-    system = "x86_64-linux";
-    pkgs = import nixpkgs {inherit system;};
+    nixLib = nixpkgs.lib;
+    defaultSystem = "x86_64-linux";
+    defaultUser = import ./user.nix;
+    mkPkgs = system: import nixpkgs {inherit system;};
+    mergeInputs = extraInputs: inputs // extraInputs;
+    mkNixosConfiguration = {
+      system ? defaultSystem,
+      user ? defaultUser,
+      extraInputs ? {},
+      extraModules ? [],
+      extraSpecialArgs ? {},
+    }:
+      nixpkgs.lib.nixosSystem {
+        inherit system;
+        specialArgs =
+          {
+            inputs = mergeInputs extraInputs;
+            inherit user;
+          }
+          // extraSpecialArgs;
+        modules =
+          [
+            ./nixos/configuration.nix
+          ]
+          ++ extraModules;
+      };
+    mkHomeConfiguration = {
+      system ? defaultSystem,
+      user ? defaultUser,
+      extraInputs ? {},
+      extraModules ? [],
+      extraSpecialArgs ? {},
+    }: let
+      pkgs = mkPkgs system;
+    in
+      home-manager.lib.homeManagerConfiguration {
+        inherit pkgs;
+        extraSpecialArgs =
+          {
+            inputs = mergeInputs extraInputs;
+            inherit user;
+          }
+          // extraSpecialArgs;
+        modules =
+          [
+            ./home-manager/home.nix
+            bcompare5.homeManagerModules.default
+          ]
+          ++ extraModules;
+      };
     nixFiles = [
       "flake.nix"
       "user.nix"
@@ -78,7 +124,17 @@
       "home-manager/modules/fonts.nix"
       "home-manager/modules/packages/minimal.nix"
       "home-manager/modules/packages/full.nix"
-      "home-manager/modules/packages/personal.nix"
+      "local/templates/flake.nix"
+      "local/templates/nixos/default.nix"
+      "local/templates/nixos/hardware.nix"
+      "local/templates/nixos/packages.nix"
+      "local/templates/nixos/services.nix"
+      "local/templates/nixos/swap.nix"
+      "local/templates/home-manager/default.nix"
+      "local/templates/home-manager/packages.nix"
+      "local/templates/home-manager/programs.nix"
+      "local/templates/home-manager/services.nix"
+      "local/templates/home-manager/fonts.nix"
     ];
     shellFiles = [
       "install.sh"
@@ -96,10 +152,10 @@
       "scripts/lib/display-config.sh"
     ];
   in {
-    formatter.${system} = pkgs.alejandra;
+    formatter.${defaultSystem} = (mkPkgs defaultSystem).alejandra;
 
-    devShells.${system}.default = pkgs.mkShell {
-      packages = with pkgs; [
+    devShells.${defaultSystem}.default = (mkPkgs defaultSystem).mkShell {
+      packages = with (mkPkgs defaultSystem); [
         actionlint
         alejandra
         deadnix
@@ -113,51 +169,63 @@
       '';
     };
 
-    checks.${system} = {
+    checks.${defaultSystem} = {
       nix-format =
-        pkgs.runCommand "md4n-nix-format-check"
+        (mkPkgs defaultSystem).runCommand "md4n-nix-format-check"
         {
-          nativeBuildInputs = [pkgs.alejandra];
+          nativeBuildInputs = [(mkPkgs defaultSystem).alejandra];
         }
         ''
           cd ${self}
-          alejandra --check ${lib.escapeShellArgs nixFiles}
+          alejandra --check ${nixLib.escapeShellArgs nixFiles}
           touch "$out"
         '';
 
       shellcheck =
-        pkgs.runCommand "md4n-shellcheck"
+        (mkPkgs defaultSystem).runCommand "md4n-shellcheck"
         {
-          nativeBuildInputs = [pkgs.shellcheck];
+          nativeBuildInputs = [(mkPkgs defaultSystem).shellcheck];
         }
         ''
           cd ${self}
-          shellcheck -S warning ${lib.escapeShellArgs shellFiles}
+          shellcheck -S warning ${nixLib.escapeShellArgs shellFiles}
           touch "$out"
         '';
     };
 
+    lib = {
+      inherit mkHomeConfiguration mkNixosConfiguration;
+    };
+
+    nixosModules = {
+      configuration = ./nixos/configuration.nix;
+      hardware = ./nixos/hardware-configuration.nix;
+      core = ./nixos/modules/core.nix;
+      boot = ./nixos/modules/boot.nix;
+      desktop = ./nixos/modules/desktop.nix;
+      services = ./nixos/modules/services.nix;
+      packages = ./nixos/modules/packages.nix;
+      virtualization = ./nixos/modules/virtualization.nix;
+    };
+
+    homeManagerModules = {
+      home = ./home-manager/home.nix;
+      core = ./home-manager/modules/core.nix;
+      programs = ./home-manager/modules/programs.nix;
+      services = ./home-manager/modules/services.nix;
+      fonts = ./home-manager/modules/fonts.nix;
+      bcompare5 = bcompare5.homeManagerModules.default;
+    };
+
     nixosConfigurations = {
-      ${user.hostname} = nixpkgs.lib.nixosSystem {
-        inherit system;
-        specialArgs = {
-          inherit inputs user;
-        };
-        modules = [
-          ./nixos/configuration.nix
+      ${defaultUser.hostname} = mkNixosConfiguration {
+        user = defaultUser;
+        extraModules = [
+          ./nixos/hardware-configuration.nix
         ];
       };
     };
 
-    homeConfigurations.${user.name} = home-manager.lib.homeManagerConfiguration {
-      inherit pkgs;
-      extraSpecialArgs = {
-        inherit inputs user;
-      };
-      modules = [
-        ./home-manager/home.nix
-        bcompare5.homeManagerModules.default
-      ];
-    };
+    homeConfigurations.${defaultUser.name} = mkHomeConfiguration {user = defaultUser;};
   };
 }

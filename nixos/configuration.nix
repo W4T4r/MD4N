@@ -18,7 +18,6 @@
 in {
   imports =
     [
-      ./hardware-configuration.nix
       ./modules/core.nix
       ./modules/boot.nix
       ./modules/desktop.nix
