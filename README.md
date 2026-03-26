@@ -159,7 +159,7 @@ Use these documents when you want the detailed explanation for each area:
 - Input methods are configured around Fcitx5, with Hazkey and Mozc for Japanese and Rime for Simplified Chinese
 - GNOME is present as a compatibility layer, not as the primary desktop
 - The repository scripts are added to `PATH` through Home Manager
-- Niri keeps shared config in the repo, generates `outputs.local.kdl` into `~/.config/niri/`, and keeps `browser.sh` under `~/.config/md4n/generated/niri/`
+- Niri and Fish keep shared config in the repo while allowing a few ignored machine-local files to live beside the linked trees
 
 ## License
 

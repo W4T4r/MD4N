@@ -13,6 +13,11 @@ local/nixos/
 
 # Linked config trees that intentionally keep local files beside shared config
 home-manager/config/gtk-3.0/bookmarks
+home-manager/config/fish/md4n.generated.fish
+home-manager/config/fish/local.env.fish
+home-manager/config/fish/local.aliases.fish
+home-manager/config/fish/local.functions.fish
+home-manager/config/niri/browser.sh
 home-manager/config/niri/outputs.kdl
 home-manager/config/niri/outputs.kdl.bak
 home-manager/config/niri/outputs.local.kdl

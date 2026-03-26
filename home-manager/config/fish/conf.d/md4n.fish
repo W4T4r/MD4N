@@ -1,11 +1,22 @@
 set -g fish_greeting ""
 
-set -l shared_env_file "$HOME/.config/md4n/generated/fish/env.fish"
-if test -f "$shared_env_file"
-    source "$shared_env_file"
+set -l generated_env_file "$HOME/.config/fish/md4n.generated.fish"
+if test -f "$generated_env_file"
+    source "$generated_env_file"
 else
     set -gx PATH $HOME/.local/bin $PATH
     set -gx NIXPKGS_ALLOW_UNFREE 1
+end
+
+set -l local_files \
+    "$HOME/.config/fish/local.env.fish" \
+    "$HOME/.config/fish/local.aliases.fish" \
+    "$HOME/.config/fish/local.functions.fish"
+
+for file in $local_files
+    if test -f "$file"
+        source "$file"
+    end
 end
 
 eval (direnv hook fish)
@@ -15,12 +26,3 @@ if test "$TERM" != "dumb"
 end
 
 fastfetch
-
-set -l local_conf_dir "$HOME/.config/md4n/local/fish/conf.d"
-if test -d "$local_conf_dir"
-    for file in $local_conf_dir/*.fish
-        if test -f "$file"
-            source "$file"
-        end
-    end
-end
