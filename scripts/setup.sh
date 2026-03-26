@@ -685,7 +685,7 @@ confirm_user_profile() {
 apply_user_profile_defaults() {
     enable_custom_fonts="true"
     enable_virtualization="true"
-    enable_bcompare5="true"
+    enable_bcompare5="false"
     enable_vesktop="true"
     enable_cava="true"
     enable_gemini_cli="true"
@@ -700,7 +700,7 @@ apply_user_profile_defaults() {
     enable_distrobox="true"
     enable_distroshelf="true"
     enable_texlive_full="true"
-    enable_global_protect="true"
+    enable_global_protect="false"
     enable_virt_manager="true"
     enable_ollama="true"
     enable_steam="true"
@@ -736,7 +736,7 @@ prompt_optional_full_packages() {
     detail "Full profile optional packages:"
     detail "You will be asked about packages many users do not need."
 
-    enable_bcompare5=$(prompt_bool_with_default "Include Beyond Compare 5 integration?" "true")
+    enable_bcompare5=$(prompt_bool_with_default "Include Beyond Compare 5 integration?" "false")
     detail "Google Chrome note: if you sign in with fprintd-based login, Chrome may still ask for your password."
     enable_google_chrome=$(prompt_bool_with_default "Include Google Chrome?" "true")
     enable_thunderbird=$(prompt_bool_with_default "Include Thunderbird?" "true")
@@ -747,7 +747,7 @@ prompt_optional_full_packages() {
     enable_distrobox=$(prompt_bool_with_default "Include Distrobox?" "true")
     enable_distroshelf=$(prompt_bool_with_default "Include Distroshelf?" "true")
     enable_texlive_full=$(prompt_bool_with_default "Include TeX Live Full?" "true")
-    enable_global_protect=$(prompt_bool_with_default "Include GlobalProtect OpenConnect?" "true")
+    enable_global_protect=$(prompt_bool_with_default "Include GlobalProtect OpenConnect?" "false")
     enable_virt_manager=$(prompt_bool_with_default "Include virt-manager and libvirt helper tools?" "true")
 }
 
@@ -958,7 +958,7 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
             enable_virtualization=$(prompt_bool_with_default "Enable virtualization environment?" "true")
         fi
 
-        enable_bcompare5="true"
+        enable_bcompare5="false"
         enable_vesktop="true"
         enable_cava="true"
         enable_gemini_cli="true"
@@ -973,7 +973,7 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
         enable_distrobox="true"
         enable_distroshelf="true"
         enable_texlive_full="true"
-        enable_global_protect="true"
+        enable_global_protect="false"
         enable_virt_manager="true"
         enable_ollama="true"
         enable_steam="true"
@@ -983,7 +983,7 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
                 prompt_optional_full_packages
             else
                 detail "Virtualization environment disabled: skipping Podman, Distrobox, Distroshelf, and virt-manager prompts."
-                enable_bcompare5=$(prompt_bool_with_default "Include Beyond Compare 5 integration?" "true")
+                enable_bcompare5=$(prompt_bool_with_default "Include Beyond Compare 5 integration?" "false")
                 detail "Google Chrome note: if you sign in with fprintd-based login, Chrome may still ask for your password."
                 enable_google_chrome=$(prompt_bool_with_default "Include Google Chrome?" "true")
                 enable_thunderbird=$(prompt_bool_with_default "Include Thunderbird?" "true")
@@ -991,7 +991,7 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
                 enable_davinci_resolve=$(prompt_bool_with_default "Include DaVinci Resolve?" "true")
                 enable_zotero=$(prompt_bool_with_default "Include Zotero?" "true")
                 enable_texlive_full=$(prompt_bool_with_default "Include TeX Live Full?" "true")
-                enable_global_protect=$(prompt_bool_with_default "Include GlobalProtect OpenConnect?" "true")
+                enable_global_protect=$(prompt_bool_with_default "Include GlobalProtect OpenConnect?" "false")
                 enable_podman_desktop="false"
                 enable_distrobox="false"
                 enable_distroshelf="false"

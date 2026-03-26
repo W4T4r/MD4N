@@ -17,7 +17,7 @@ let
   gitEmail = "";
   packageProfile = "full";
   enablePersonalFonts = false;
-  enableBcompare5 = true;
+  enableBcompare5 = false;
   enableVesktop = true;
   enableCava = true;
   enableGeminiCli = true;
@@ -32,7 +32,7 @@ let
   enableDistrobox = true;
   enableDistroshelf = true;
   enableTexliveFull = true;
-  enableGlobalProtect = true;
+  enableGlobalProtect = false;
   enableVirtualization = true;
   enableVirtManager = true;
   enableOllama = true;
