@@ -22,7 +22,7 @@ Instead of expecting the user to remember raw `nixos-rebuild`, `home-manager`, g
 - `configure-niri-outputs.sh`
   Regenerates Niri display outputs in place.
 - `forge.sh`
-  Applies NixOS and or Home Manager changes from the active flake entrypoint, preferring `local/flake.nix` over the shared root flake.
+  Applies NixOS and or Home Manager changes from the active flake entrypoint, preferring `local/flake.nix` over the shared root flake. When `--update` is used, it refreshes the shared root lock and the local lock when present.
 - `rollback.sh`
   Switches to an earlier NixOS or Home Manager generation.
 - `tune.sh`

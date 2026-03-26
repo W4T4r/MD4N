@@ -15,7 +15,7 @@ Each file owns one part of the system so the top-level host definition stays rea
   Desktop stack and multimedia plumbing.
   This enables Bluetooth, GDM on Wayland, Niri, Xwayland support, a trimmed GNOME environment, PipeWire, and RTKit.
 - `services.nix`
-  Service-backed features selected at the system level such as fingerprint support, printing, GVFS, input-remapper, Ollama, and Steam.
+  Service-backed features selected at the system level such as fingerprint support, printing, GVFS, input-remapper, and Ollama.
 - `packages.nix`
   Shared system package selection, including GPU-aware packages and optional workstation tools.
 - `virtualization.nix`

@@ -12,7 +12,7 @@ Files placed here are installed under `~/.local/share/applications` so the deskt
 
 ## Current Role In MD4N
 
-MD4N uses this directory for editor and Typora launchers that behave better than the upstream defaults for this setup.
+MD4N uses this directory for shared launcher overrides that behave better than the upstream defaults for this setup.
 If a desktop entry change is meant to be shared across machines, it belongs here rather than in an ad hoc local directory.
 
 ## What Not To Put Here

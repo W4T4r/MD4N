@@ -31,7 +31,6 @@ let
   enableVirtualization = true;
   enableVirtManager = true;
   enableOllama = true;
-  enableSteam = true;
   gpuVendor = "generic";
   enableFingerprint = false;
   enableDualBoot = false;
@@ -43,8 +42,8 @@ let
   app = "${homemanager}/applications";
   faceFile = "";
   browser = "firefox";
-  niriBrowserScript = "${home}/.config/md4n/generated/niri/browser.sh";
+  niriBrowserScript = "${home}/.config/niri/browser.sh";
   niriOutputsFile = "${home}/.config/niri/outputs.local.kdl";
 in {
-  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableLocalFonts enableVesktop enableCava enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableVirtualization enableVirtManager enableOllama enableSteam gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile browser niriBrowserScript niriOutputsFile;
+  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableLocalFonts enableVesktop enableCava enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableVirtualization enableVirtManager enableOllama gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile browser niriBrowserScript niriOutputsFile;
 }

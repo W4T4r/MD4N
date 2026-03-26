@@ -1,6 +1,5 @@
 {
   pkgs,
-  inputs,
   user,
   ...
 }: let
@@ -16,17 +15,11 @@
       then [pkgs.dnsmasq pkgs.phodav]
       else []
     );
-  optionalWorkstationPackages =
-    (
-      if user.enableTexliveFull or false
-      then [pkgs.texliveFull]
-      else []
-    )
-    ++ (
-      if user.enableGlobalProtect or false
-      then [inputs.globalprotect-openconnect.packages.${pkgs.stdenv.hostPlatform.system}.default]
-      else []
-    );
+  optionalWorkstationPackages = (
+    if user.enableTexliveFull or false
+    then [pkgs.texliveFull]
+    else []
+  );
   btopPackage =
     if (user.gpuVendor or "generic") == "amd"
     then pkgs.btop-rocm

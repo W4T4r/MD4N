@@ -2,6 +2,7 @@
 
 This directory stores the shared application configuration that MD4N installs into the user's XDG config tree.
 Most subdirectories map closely to `~/.config/<app>` and are linked into place through Home Manager.
+Some linked trees such as `fish/` and `niri/` intentionally allow a few ignored machine-local files to live beside the shared config.
 
 ## What You Will Find Here
 

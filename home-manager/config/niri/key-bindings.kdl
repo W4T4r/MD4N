@@ -15,7 +15,7 @@ binds {
     Mod+Return hotkey-overlay-title="Open a Terminal: kitty" { spawn "kitty"; }
     Mod+Ctrl+Return { spawn-sh "noctalia-shell ipc call launcher toggle"; }
     Mod+E { spawn "nemo"; }
-    Mod+B { spawn-sh "fish ~/.config/md4n/generated/niri/browser.sh"; }
+    Mod+B { spawn-sh "fish ~/.config/niri/browser.sh"; }
     Mod+V { spawn-sh "alacritty --title 'clipboard' -e clipse"; }
     Mod+Ctrl+Q { spawn-sh "noctalia-shell ipc call sessionMenu toggle"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen" { spawn-sh "noctalia-shell ipc call lockScreen lock"; }

@@ -6,27 +6,6 @@
   ...
 }: let
   symlink = config.lib.file.mkOutOfStoreSymlink;
-  rimeIceData = "${pkgs.rime-ice}/share/rime-data";
-  rimeIceFiles = [
-    "custom_phrase.txt"
-    "double_pinyin.schema.yaml"
-    "double_pinyin_abc.schema.yaml"
-    "double_pinyin_flypy.schema.yaml"
-    "double_pinyin_jiajia.schema.yaml"
-    "double_pinyin_mspy.schema.yaml"
-    "double_pinyin_sogou.schema.yaml"
-    "double_pinyin_ziguang.schema.yaml"
-    "melt_eng.dict.yaml"
-    "melt_eng.schema.yaml"
-    "radical_pinyin.dict.yaml"
-    "radical_pinyin.schema.yaml"
-    "rime_ice.dict.yaml"
-    "rime_ice.schema.yaml"
-    "rime_ice_suggestion.yaml"
-    "symbols_caps_v.yaml"
-    "symbols_v.yaml"
-    "t9.schema.yaml"
-  ];
 in {
   home = {
     username = user.name;
@@ -58,7 +37,7 @@ in {
     mimeApps = {
       enable = true;
       defaultApplications = {
-        "text/markdown" = ["typora.desktop"];
+        "text/markdown" = ["neovim.desktop"];
         "text/plain" = ["neovim.desktop"];
         "text/x-python" = ["neovim.desktop"];
         "text/x-shellscript" = ["neovim.desktop"];
@@ -92,18 +71,10 @@ in {
       "xsettingsd".source = ../config/xsettingsd;
       "starship.toml".source = ../config/starship.toml;
     };
-    dataFile =
-      {
-        "applications/code.desktop".source = ../applications/code.desktop;
-        "applications/neovim.desktop".source = ../applications/neovim.desktop;
-        "applications/typora.desktop".source = ../applications/typora.desktop;
-        "fcitx5/rime/default.custom.yaml".source = ../config/fcitx5/rime/default.custom.yaml;
-      }
-      // builtins.listToAttrs (map (name: {
-          name = "fcitx5/rime/${name}";
-          value.source = "${rimeIceData}/${name}";
-        })
-        rimeIceFiles);
+    dataFile = {
+      "applications/code.desktop".source = ../applications/code.desktop;
+      "applications/neovim.desktop".source = ../applications/neovim.desktop;
+    };
   };
 
   home.file =
@@ -119,7 +90,7 @@ in {
     enable = true;
     type = "fcitx5";
     fcitx5.addons = with pkgs; [
-      fcitx5-rime
+      qt6Packages.fcitx5-chinese-addons
       fcitx5-mozc-ut
       fcitx5-gtk
     ];

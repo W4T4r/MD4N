@@ -33,7 +33,7 @@ This top-level README is the operator guide: how to install it, regenerate machi
 - Machine-local answers are generated into `local/generated/user.nix` by [scripts/configure-local.sh](scripts/configure-local.sh).
 - The active machine entrypoint can live in `local/flake.nix`, which wraps the shared root flake and can add private inputs.
 - Local Home Manager and NixOS overrides belong under `local/home-manager/` and `local/nixos/`.
-- `local/templates/` contains starter files that can be copied into the ignored local tree.
+- `local_templates/` contains the tracked starter files and documentation for the ignored local tree.
 - Generated local state should be regenerated through the scripts, not hand-edited.
 - `direnv` users can run `direnv allow` in the repository root to load the local validation toolchain automatically.
 
@@ -70,8 +70,9 @@ Use the script layer instead of raw commands whenever possible.
 If you need to change machine-local answers later, re-run [scripts/configure-local.sh](scripts/configure-local.sh) and then apply again.
 
 For input methods, the shared setup now keeps Japanese input on Fcitx5 through
-Hazkey and Mozc, and Simplified Chinese input on Fcitx5 through Rime.
-The detailed Fcitx5 and Rime layout is documented in
+Hazkey and Mozc, and Simplified Chinese input on Fcitx5 through Pinyin from
+`fcitx5-chinese-addons`.
+The detailed Fcitx5 layout is documented in
 [home-manager/config/fcitx5/README.md](home-manager/config/fcitx5/README.md).
 
 ## Local Validation
@@ -98,7 +99,7 @@ During setup, MD4N can run in guided mode or automatic mode.
 - Guided mode asks for identity, locale, time zone, hostname, package profile, virtualization, GPU vendor, browser choice, fingerprint support, dual-boot support, hibernate support, the AI tools bundle, the TeX and Zotero bundle, and profile-specific package choices.
 - Automatic mode keeps the main machine-detection path and only asks for the choices that still need operator input.
 - The selected package profile drives both NixOS and Home Manager behavior.
-- Local-only packages and inputs such as Beyond Compare 5, OBS Studio, DaVinci Resolve, and GlobalProtect OpenConnect stay in `local/` modules and `local/flake.nix` instead of the shared root flake.
+- Personal machine-local packages and inputs stay in `local/` modules and `local/flake.nix` instead of the shared root flake.
 
 Current profiles:
 
@@ -133,9 +134,9 @@ Use these documents when you want the detailed explanation for each area:
 - [Home Manager Overview](home-manager/README.md): user-level structure and how files are linked into the home directory
 - [Home Manager Modules](home-manager/modules/README.md): core, programs, services, fonts, and package layering
 - [Home Manager Package Profiles](home-manager/modules/packages/README.md): the role of `minimal` and `full`
-- [Local Overrides](local/README.md): what belongs under the repository-local state directory
+- [Local Templates](local_templates/README.md): tracked starter files and documentation for the ignored local runtime tree
 - [Shared Config Tree](home-manager/config/README.md): what belongs under the repository-managed config tree
-- [Fcitx5 and Rime](home-manager/config/fcitx5/README.md): Japanese and Chinese input layout, shared profile, and Rime deployment
+- [Fcitx5](home-manager/config/fcitx5/README.md): Japanese and Chinese input layout and shared profile
 - [Desktop Entry Overrides](home-manager/applications/README.md): how `.desktop` overrides are organized
 - [Wallpapers](home-manager/Wallpapers/README.md): wallpaper assets bundled with the setup
 - [Scripts](scripts/README.md): install, apply, rollback, and maintenance workflow
@@ -147,7 +148,7 @@ Use these documents when you want the detailed explanation for each area:
 ## Important Files
 
 - [flake.nix](flake.nix): shared base flake, exported modules, and builder functions
-- [local/README.md](local/README.md): local entrypoint layout, templates, and ignored paths
+- [local_templates/README.md](local_templates/README.md): local runtime layout, starter files, and ignored paths
 - [user.nix](user.nix): repository-safe shared defaults
 - [lib/user.nix](lib/user.nix): merge and normalization layer for user settings
 - [nixos/configuration.nix](nixos/configuration.nix): stable NixOS entrypoint
@@ -156,10 +157,10 @@ Use these documents when you want the detailed explanation for each area:
 ## Notes
 
 - Wayland-first desktop centered on Niri and Noctalia
-- Input methods are configured around Fcitx5, with Hazkey and Mozc for Japanese and Rime for Simplified Chinese
+- Input methods are configured around Fcitx5, with Hazkey and Mozc for Japanese and Pinyin for Simplified Chinese
 - GNOME is present as a compatibility layer, not as the primary desktop
 - The repository scripts are added to `PATH` through Home Manager
-- Niri keeps shared config in the repo, generates `outputs.local.kdl` into `~/.config/niri/`, and keeps `browser.sh` under `~/.config/md4n/generated/niri/`
+- Niri and Fish keep shared config in the repo while allowing a few ignored machine-local files to live beside the linked trees
 
 ## License
 

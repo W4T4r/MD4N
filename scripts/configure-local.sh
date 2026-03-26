@@ -71,12 +71,14 @@ LOCAL_DIR="${ROOT_DIR}/local"
 LOCAL_GENERATED_DIR="${LOCAL_DIR}/generated"
 LOCAL_HOME_MANAGER_DIR="${LOCAL_DIR}/home-manager"
 LOCAL_NIXOS_DIR="${LOCAL_DIR}/nixos"
-LOCAL_TEMPLATE_DIR="${LOCAL_DIR}/templates"
+LOCAL_TEMPLATE_DIR="${ROOT_DIR}/local_templates"
 LOCAL_FLAKE_FILE="${LOCAL_DIR}/flake.nix"
 USER_NIX="${ROOT_DIR}/user.nix"
 USER_LOCAL_NIX="${LOCAL_GENERATED_DIR}/user.nix"
 FORGE_SCRIPT="${ROOT_DIR}/scripts/forge.sh"
 CONFIGURE_NIRI_OUTPUTS_SCRIPT="${ROOT_DIR}/scripts/configure-niri-outputs.sh"
+username=$(whoami)
+DEFAULT_BROWSER="firefox"
 
 detect_locale() {
     local detected=""
@@ -367,10 +369,35 @@ print_timezone_help() {
 }
 
 print_font_preferences_help() {
-    detail "Local font preferences toggle the dedicated local font module."
-    detail "This stays outside the shared repository defaults."
+    detail "The local font module is generated and enabled by default."
+    detail "Edit the local file later if you want machine-specific font preferences."
     detail "Edit: ${ROOT_DIR}/local/home-manager/fonts.nix"
-    detail "To change the on/off state later, re-run: bash ${ROOT_DIR}/scripts/configure-local.sh"
+}
+
+print_detected_user_info_defaults() {
+    detail "Detected user information defaults:"
+    detail "  - Full name      : ${DEFAULT_FULLNAME}"
+    detail "  - Locale         : ${DEFAULT_LOCALE}"
+    detail "  - Timezone       : ${DEFAULT_TIMEZONE}"
+    detail "  - Hostname       : ${DEFAULT_HOSTNAME}"
+    detail "  - Git name       : ${DEFAULT_GIT_NAME}"
+    detail "  - Git email      : ${DEFAULT_GIT_EMAIL:-<unset>}"
+    detail "Still prompted after skipping user information:"
+    detail "  - Package profile [full]"
+    detail "  - GPU vendor [${DEFAULT_GPU_VENDOR}]"
+    detail "  - Fingerprint authentication [disabled]"
+    detail "  - Dual-boot / hibernate [disabled]"
+    detail "  - Virtualization environment [enabled] when profile is not minimal"
+    detail "  - Browser launcher [${DEFAULT_BROWSER}]"
+    detail "  - Niri display/output setup"
+    detail "Other defaults used with the full profile:"
+    detail "  - Local fonts module [enabled]"
+    detail "  - Vesktop, CAVA, Chrome, Thunderbird, Podman Desktop, virt-manager"
+    detail "  - AI tools bundle [enabled]: Codex, Claude Code, Ollama"
+    detail "  - Writing/research bundle [enabled]: TeX Live Full, Zotero"
+    detail "  - Container tools bundle [enabled]: Distrobox, Distroshelf"
+    detail "  - If virtualization is disabled, Podman Desktop, Distrobox, Distroshelf, and virt-manager stay disabled."
+    detail "  - If the minimal profile is selected, the packages above stay disabled."
 }
 
 copy_template_if_missing() {
@@ -384,6 +411,20 @@ copy_template_if_missing() {
         cp "$source" "$target"
         detail "Created local scaffold: ${target}"
     fi
+}
+
+confirm_local_scaffold_update() {
+    local target=$1
+    local reason=$2
+    local answer=""
+
+    if ! is_interactive; then
+        return 0
+    fi
+
+    warn "${reason}"
+    read -r -p "Overwrite ${target}? [y/N] " answer
+    [[ "$answer" =~ ^[yY]$ ]]
 }
 
 sync_local_flake() {
@@ -401,6 +442,17 @@ sync_local_flake() {
         return 0
     fi
 
+    if grep -Eq 'inputs\.bcompare5\.homeManagerModules\.default|bcompare5 =|globalprotect-openconnect' "$LOCAL_FLAKE_FILE" \
+        && ! grep -Eq 'extraHomeModulesPath|extraNixosModulesPath' "$LOCAL_FLAKE_FILE"; then
+        if ! confirm_local_scaffold_update "$LOCAL_FLAKE_FILE" "Existing local flake scaffold looks outdated and would be refreshed."; then
+            detail "Skipped local flake scaffold refresh: ${LOCAL_FLAKE_FILE}"
+            return 0
+        fi
+        sed "s|__MD4N_ROOT__|${escaped_root}|g" "${LOCAL_TEMPLATE_DIR}/flake.nix" > "$LOCAL_FLAKE_FILE"
+        detail "Refreshed legacy local flake scaffold: ${LOCAL_FLAKE_FILE}"
+        return 0
+    fi
+
     temp_file=$(mktemp)
     sed \
         -e "s|path:\\.\\.|path:${escaped_root}|g" \
@@ -408,8 +460,13 @@ sync_local_flake() {
         "$LOCAL_FLAKE_FILE" > "$temp_file"
 
     if ! cmp -s "$LOCAL_FLAKE_FILE" "$temp_file"; then
-        mv "$temp_file" "$LOCAL_FLAKE_FILE"
-        detail "Updated local flake root input: ${LOCAL_FLAKE_FILE}"
+        if confirm_local_scaffold_update "$LOCAL_FLAKE_FILE" "The local flake root path would be updated to the current repository location."; then
+            mv "$temp_file" "$LOCAL_FLAKE_FILE"
+            detail "Updated local flake root input: ${LOCAL_FLAKE_FILE}"
+        else
+            rm -f "$temp_file"
+            detail "Skipped local flake update: ${LOCAL_FLAKE_FILE}"
+        fi
     else
         rm -f "$temp_file"
     fi
@@ -429,8 +486,12 @@ sync_local_hardware_stub() {
     fi
 
     if grep -Eq '__MD4N_ROOT__|hardware-configuration\.nix' "$target"; then
-        cp "$template" "$target"
-        detail "Updated local hardware fallback import: ${target}"
+        if confirm_local_scaffold_update "$target" "The local hardware fallback import would be refreshed from the current scaffold."; then
+            cp "$template" "$target"
+            detail "Updated local hardware fallback import: ${target}"
+        else
+            detail "Skipped local hardware scaffold update: ${target}"
+        fi
     fi
 }
 
@@ -439,11 +500,15 @@ ensure_local_scaffold() {
 
     sync_local_flake
     copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/home-manager/default.nix" "${LOCAL_HOME_MANAGER_DIR}/default.nix"
+    copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/home-manager/extra-modules.nix" "${LOCAL_HOME_MANAGER_DIR}/extra-modules.nix"
     copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/home-manager/packages.nix" "${LOCAL_HOME_MANAGER_DIR}/packages.nix"
     copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/home-manager/programs.nix" "${LOCAL_HOME_MANAGER_DIR}/programs.nix"
+    copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/home-manager/services.nix" "${LOCAL_HOME_MANAGER_DIR}/services.nix"
     copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/home-manager/fonts.nix" "${LOCAL_HOME_MANAGER_DIR}/fonts.nix"
     copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/nixos/default.nix" "${LOCAL_NIXOS_DIR}/default.nix"
+    copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/nixos/extra-modules.nix" "${LOCAL_NIXOS_DIR}/extra-modules.nix"
     copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/nixos/packages.nix" "${LOCAL_NIXOS_DIR}/packages.nix"
+    copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/nixos/services.nix" "${LOCAL_NIXOS_DIR}/services.nix"
     copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/nixos/swap.nix" "${LOCAL_NIXOS_DIR}/swap.nix"
     sync_local_hardware_stub
 }
@@ -452,14 +517,6 @@ print_virtualization_help() {
     detail "Virtualization environment:"
     detail "Enables Podman, libvirt, KVM group membership, and related desktop tools."
     detail "If disabled, virtualization modules and helper packages stay out of the system."
-}
-
-print_local_only_packages_help() {
-    detail "Local-only packages:"
-    detail "  - Beyond Compare 5: enable in local/home-manager/programs.nix when needed"
-    detail "  - OBS Studio: enable in local/home-manager/packages.nix when needed"
-    detail "  - DaVinci Resolve: enable in local/home-manager/packages.nix when needed"
-    detail "  - GlobalProtect OpenConnect: enable in local/nixos/packages.nix when needed"
 }
 
 prompt_bool_with_default() {
@@ -499,6 +556,13 @@ set_docs_tools_state() {
     enable_texlive_full="$enabled"
 }
 
+set_container_tools_state() {
+    local enabled=$1
+
+    enable_distrobox="$enabled"
+    enable_distroshelf="$enabled"
+}
+
 prompt_ai_tools() {
     detail "AI tools bundle:"
     detail "  - Codex"
@@ -520,22 +584,29 @@ prompt_docs_tools() {
     set_docs_tools_state "$enabled"
 }
 
+prompt_container_tools() {
+    detail "Container tools bundle:"
+    detail "  - Distrobox"
+    detail "  - Distroshelf"
+
+    local enabled
+    enabled=$(prompt_bool_with_default "Include Distrobox and Distroshelf?" "true")
+    set_container_tools_state "$enabled"
+}
+
 prompt_optional_full_packages() {
     detail "Full profile optional packages:"
     detail "You will be asked about packages many users do not need."
-    print_local_only_packages_help
 
     prompt_ai_tools
     prompt_docs_tools
-    enable_distrobox=$(prompt_bool_with_default "Include Distrobox?" "true")
-    enable_distroshelf=$(prompt_bool_with_default "Include Distroshelf?" "true")
+    prompt_container_tools
 }
 
 prompt_optional_full_packages_without_virtualization() {
     detail "Full profile optional packages:"
     detail "You will be asked about packages many users do not need."
     detail "Virtualization environment disabled: Podman Desktop, Distrobox, Distroshelf, and virt-manager stay disabled."
-    print_local_only_packages_help
 
     prompt_ai_tools
     prompt_docs_tools
@@ -584,8 +655,8 @@ EOF
 
 write_fish_env_script() {
     local dotroot=$1
-    local fish_env_file="/home/${username}/.config/md4n/generated/fish/env.fish"
-    local fish_env_backup="/home/${username}/.local/state/md4n/fish/env.fish.bak"
+    local fish_env_file="/home/${username}/.config/fish/md4n.generated.fish"
+    local fish_env_backup="/home/${username}/.local/state/md4n/fish/md4n.generated.fish.bak"
 
     mkdir -p "$(dirname "$fish_env_file")"
     mkdir -p "$(dirname "$fish_env_backup")"
@@ -598,6 +669,7 @@ write_fish_env_script() {
 
     info "Generating ${fish_env_file}..."
     cat > "$fish_env_file" <<EOF
+# Auto-generated by scripts/configure-local.sh
 set -gx PATH ${dotroot}/scripts \$HOME/.local/bin \$PATH
 set -gx NIXPKGS_ALLOW_UNFREE 1
 EOF
@@ -607,7 +679,7 @@ EOF
 write_niri_browser_script() {
     local username=$1
     local browser=$2
-    local browser_script_file="/home/${username}/.config/md4n/generated/niri/browser.sh"
+    local browser_script_file="/home/${username}/.config/niri/browser.sh"
     local browser_script_backup="/home/${username}/.local/state/md4n/niri/browser.sh.bak"
 
     mkdir -p "$(dirname "$browser_script_file")"
@@ -628,28 +700,35 @@ write_niri_browser_script() {
 print_banner
 info "Preparing MD4N local configuration..."
 
-# --- 0. Mode Selection ---
-AUTO_MODE=false
+DEFAULT_FULLNAME=$(detect_fullname "$username")
+DEFAULT_LOCALE=$(detect_locale)
+DEFAULT_TIMEZONE=$(detect_timezone)
+DEFAULT_HOSTNAME=$(detect_hostname)
+DEFAULT_GIT_NAME=$(detect_git_config user.name)
+DEFAULT_GIT_EMAIL=$(detect_git_config user.email)
+DEFAULT_GPU_VENDOR=$(detect_gpu_vendor)
+
+if [[ -z "$DEFAULT_GIT_NAME" ]]; then
+    DEFAULT_GIT_NAME=$DEFAULT_FULLNAME
+fi
+
+# --- 0. Prompt Selection ---
+SKIP_USER_INFO_PROMPTS=false
 FIRST_TIME=false
 [[ -f "$USER_LOCAL_NIX" ]] || FIRST_TIME=true
 
-if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
+if is_interactive; then
     echo
     if [[ "$FIRST_TIME" == "true" ]]; then
         warn "This is your first time running the local configuration."
-        info "Automatic mode is mandatory for the initial configuration to ensure a correct baseline."
-        read -r -p "Do you want to proceed with the automatic local configuration? [Y/n] " auto_confirm
-        if [[ ! "$auto_confirm" =~ ^[yY]?$ ]]; then
-            error "Local configuration cancelled. Automatic mode is required for the first run."
-        fi
-        AUTO_MODE=true
-        success "Proceeding with automatic local configuration..."
     else
-        read -r -p "Enable automatic local configuration? (Skips name/locale/timezone/hostname/Git/GPU/fingerprint/dual-boot prompts, but still asks about browser, display, profile, and optional packages) [y/N] " auto_confirm
-        if [[ "$auto_confirm" =~ ^[yY]$ ]]; then
-            AUTO_MODE=true
-            info "Automatic mode enabled."
-        fi
+        info "You can reuse detected values for user information and keep the rest interactive."
+    fi
+    print_detected_user_info_defaults
+    read -r -p "Skip full name/locale/timezone/hostname/Git prompts and use the detected values? [y/N] " skip_user_info_confirm
+    if [[ "$skip_user_info_confirm" =~ ^[yY]$ ]]; then
+        SKIP_USER_INFO_PROMPTS=true
+        info "User information prompts will be skipped."
     fi
     echo
 fi
@@ -664,7 +743,7 @@ fi
 ensure_local_scaffold
 
 # 2. Existing Configuration Check (The Confirmation Request)
-if [[ -f "$USER_LOCAL_NIX" ]] && is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
+if [[ -f "$USER_LOCAL_NIX" ]] && is_interactive; then
     echo -e "${YELLOW}Existing local/generated/user.nix found.${NC}"
     read -r -p "Do you really want to run the local configuration again? This will overwrite your settings. [y/N] " confirm
     if [[ ! "$confirm" =~ ^[yY]$ ]]; then
@@ -678,57 +757,60 @@ step "Collecting user configuration"
 
 dotroot="$ROOT_DIR"
 
-username=$(whoami)
-DEFAULT_FULLNAME=$(detect_fullname "$username")
-DEFAULT_LOCALE=$(detect_locale)
-DEFAULT_TIMEZONE=$(detect_timezone)
-DEFAULT_HOSTNAME=$(detect_hostname)
-DEFAULT_GIT_NAME=$(detect_git_config user.name)
-DEFAULT_GIT_EMAIL=$(detect_git_config user.email)
-DEFAULT_GPU_VENDOR=$(detect_gpu_vendor)
-DEFAULT_BROWSER="firefox"
-
-if [[ -z "$DEFAULT_GIT_NAME" ]]; then
-    DEFAULT_GIT_NAME=$DEFAULT_FULLNAME
-fi
-
-if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
+if is_interactive; then
     info "Detected username: ${GREEN}${username}${NC}"
 
-    read -r -p "Enter your full name [$DEFAULT_FULLNAME]: " fullname
-    fullname=${fullname:-$DEFAULT_FULLNAME}
+    if [[ "$SKIP_USER_INFO_PROMPTS" == "true" ]]; then
+        fullname=$DEFAULT_FULLNAME
+        locale_value=$DEFAULT_LOCALE
+        timezone_value=$DEFAULT_TIMEZONE
+        hostname_value=$DEFAULT_HOSTNAME
+        git_name=${DEFAULT_GIT_NAME:-$DEFAULT_FULLNAME}
+        git_email=$DEFAULT_GIT_EMAIL
 
-    print_locale_help
-    read -r -p "Enter your system locale [$DEFAULT_LOCALE]: " locale_value
-    locale_value=${locale_value:-$DEFAULT_LOCALE}
+        info "Using detected values for user information."
+        detail "Full name: ${fullname}"
+        detail "Locale   : ${locale_value}"
+        detail "Timezone : ${timezone_value}"
+        detail "Hostname : ${hostname_value}"
+        detail "Git name : ${git_name}"
+        detail "Git email: ${git_email:-<unset>}"
+    else
+        read -r -p "Enter your full name [$DEFAULT_FULLNAME]: " fullname
+        fullname=${fullname:-$DEFAULT_FULLNAME}
 
-    if ! validate_locale "$locale_value"; then
-        error "Invalid locale format: $locale_value"
-    fi
+        print_locale_help
+        read -r -p "Enter your system locale [$DEFAULT_LOCALE]: " locale_value
+        locale_value=${locale_value:-$DEFAULT_LOCALE}
 
-    print_timezone_help
-    read -r -p "Enter your location/time zone [$DEFAULT_TIMEZONE]: " timezone_value
-    timezone_value=${timezone_value:-$DEFAULT_TIMEZONE}
+        if ! validate_locale "$locale_value"; then
+            error "Invalid locale format: $locale_value"
+        fi
 
-    if ! validate_timezone "$timezone_value"; then
-        error "Invalid time zone format: $timezone_value"
-    fi
+        print_timezone_help
+        read -r -p "Enter your location/time zone [$DEFAULT_TIMEZONE]: " timezone_value
+        timezone_value=${timezone_value:-$DEFAULT_TIMEZONE}
 
-    read -r -p "Enter your hostname [$DEFAULT_HOSTNAME]: " hostname_value
-    hostname_value=${hostname_value:-$DEFAULT_HOSTNAME}
+        if ! validate_timezone "$timezone_value"; then
+            error "Invalid time zone format: $timezone_value"
+        fi
 
-    if ! validate_hostname "$hostname_value"; then
-        error "Invalid hostname format: $hostname_value"
-    fi
+        read -r -p "Enter your hostname [$DEFAULT_HOSTNAME]: " hostname_value
+        hostname_value=${hostname_value:-$DEFAULT_HOSTNAME}
 
-    read -r -p "Enter your Git author name [$DEFAULT_GIT_NAME]: " git_name
-    git_name=${git_name:-$DEFAULT_GIT_NAME}
+        if ! validate_hostname "$hostname_value"; then
+            error "Invalid hostname format: $hostname_value"
+        fi
 
-    read -r -p "Enter your Git author email [$DEFAULT_GIT_EMAIL]: " git_email
-    git_email=${git_email:-$DEFAULT_GIT_EMAIL}
+        read -r -p "Enter your Git author name [$DEFAULT_GIT_NAME]: " git_name
+        git_name=${git_name:-$DEFAULT_GIT_NAME}
 
-    if ! validate_git_email "$git_email"; then
-        error "Invalid Git email format: $git_email"
+        read -r -p "Enter your Git author email [$DEFAULT_GIT_EMAIL]: " git_email
+        git_email=${git_email:-$DEFAULT_GIT_EMAIL}
+
+        if ! validate_git_email "$git_email"; then
+            error "Invalid Git email format: $git_email"
+        fi
     fi
 
     if [[ -z "$git_email" ]]; then
@@ -744,7 +826,7 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
     fi
 
     print_font_preferences_help
-    enable_custom_fonts=$(prompt_bool_with_default "Enable local font preferences?" "false")
+    enable_custom_fonts="true"
 
     enable_virtualization="true"
     if [[ "$package_profile" != "minimal" ]]; then
@@ -762,8 +844,6 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
     enable_distrobox="true"
     enable_distroshelf="true"
     enable_virt_manager="true"
-    enable_steam="true"
-
     if [[ "$package_profile" == "full" ]]; then
         if [[ "$enable_virtualization" == "true" ]]; then
             prompt_optional_full_packages
@@ -782,7 +862,6 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
         enable_distroshelf="false"
         enable_virtualization="false"
         enable_virt_manager="false"
-        enable_steam="false"
     elif [[ "$enable_virtualization" != "true" ]]; then
         enable_podman_desktop="false"
         enable_distrobox="false"
@@ -858,28 +937,15 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
     detail "Shelf    : ${enable_distroshelf}"
     detail "Virtual  : ${enable_virtualization}"
     detail "Virt Mgr : ${enable_virt_manager}"
-    detail "Steam    : ${enable_steam}"
     detail "Browser  : ${browser_choice}"
     detail "GPU      : ${gpu_vendor}"
     detail "Fingerprint: ${enable_fingerprint}"
     detail "Dualboot : ${enable_dual_boot}"
     detail "Hibernate: ${enable_hibernate}"
     detail "Dotfiles : ${dotroot}"
-    detail "Local-only packages: Beyond Compare 5 -> local/home-manager/programs.nix, OBS Studio and DaVinci Resolve -> local/home-manager/packages.nix, GlobalProtect OpenConnect -> local/nixos/packages.nix"
 else
-    # Automatic or non-interactive defaults
-    if [[ "$AUTO_MODE" == "true" ]]; then
-        info "Automatic mode: using detected values and repository defaults."
-        print_package_profile_choices
-        read -r -p "Select your package profile [full]: " package_profile
-        package_profile=${package_profile:-full}
-
-        if ! validate_package_profile "$package_profile"; then
-            error "Invalid package profile: $package_profile"
-        fi
-    else
-        package_profile="full"
-    fi
+    # Non-interactive defaults
+    package_profile="full"
 
     fullname=$DEFAULT_FULLNAME
     locale_value=$DEFAULT_LOCALE
@@ -887,7 +953,7 @@ else
     hostname_value=$DEFAULT_HOSTNAME
     git_name=${DEFAULT_GIT_NAME:-$DEFAULT_FULLNAME}
     git_email=$DEFAULT_GIT_EMAIL
-    enable_custom_fonts="false"
+    enable_custom_fonts="true"
     enable_vesktop="true"
     enable_cava="true"
     set_ai_tools_state "true"
@@ -899,7 +965,6 @@ else
     enable_distroshelf="true"
     enable_virtualization="true"
     enable_virt_manager="true"
-    enable_steam="true"
     browser_choice=$DEFAULT_BROWSER
     gpu_vendor=$(normalize_gpu_vendor "$DEFAULT_GPU_VENDOR")
     enable_fingerprint="false"
@@ -918,18 +983,6 @@ else
         enable_distrobox="false"
         enable_distroshelf="false"
         enable_virt_manager="false"
-        enable_steam="false"
-    elif [[ "$AUTO_MODE" == "true" ]]; then
-        print_virtualization_help
-        enable_virtualization=$(prompt_bool_with_default "Enable virtualization environment?" "true")
-
-        if [[ "$package_profile" == "full" ]]; then
-            if [[ "$enable_virtualization" != "true" ]]; then
-                prompt_optional_full_packages_without_virtualization
-            else
-                prompt_optional_full_packages
-            fi
-        fi
     fi
 
     if is_interactive; then
@@ -1009,10 +1062,6 @@ if ! validate_bool_string "$enable_ollama"; then
     error "Invalid Ollama flag: $enable_ollama"
 fi
 
-if ! validate_bool_string "$enable_steam"; then
-    error "Invalid Steam flag: $enable_steam"
-fi
-
 if ! validate_bool_string "$enable_dual_boot"; then
     error "Invalid dual-boot flag: $enable_dual_boot"
 fi
@@ -1065,7 +1114,6 @@ let
   enableVirtualization = $(render_nix_bool "$enable_virtualization");
   enableVirtManager = $(render_nix_bool "$enable_virt_manager");
   enableOllama = $(render_nix_bool "$enable_ollama");
-  enableSteam = $(render_nix_bool "$enable_steam");
   browser = "$(escape_nix_string "$browser_choice")";
   gpuVendor = "$(escape_nix_string "$gpu_vendor")";
   enableFingerprint = $(render_nix_bool "$enable_fingerprint");
@@ -1077,11 +1125,11 @@ let
   cfg = "\${homemanager}/config";
   app = "\${homemanager}/applications";
   faceFile = "";
-  niriBrowserScript = "\${home}/.config/md4n/generated/niri/browser.sh";
+  niriBrowserScript = "\${home}/.config/niri/browser.sh";
   niriOutputsFile = "\${home}/.config/niri/outputs.local.kdl";
 in
 {
-  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableLocalFonts enableVesktop enableCava enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableVirtualization enableVirtManager enableOllama enableSteam browser gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile niriBrowserScript niriOutputsFile;
+  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableLocalFonts enableVesktop enableCava enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableVirtualization enableVirtManager enableOllama browser gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile niriBrowserScript niriOutputsFile;
 }
 EOF
 
@@ -1098,7 +1146,7 @@ step "Preparing hardware configuration"
 TARGET_HW_CONFIG="${LOCAL_NIXOS_DIR}/hardware.nix"
 TARGET_HW_CONFIG_BAK="${TARGET_HW_CONFIG}.bak"
 
-if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
+if is_interactive; then
     read -r -p "Would you like to generate a new hardware configuration for THIS machine? (Requires sudo) [y/N] " gen_hw
     if [[ "$gen_hw" =~ ^[yY]$ ]]; then
         if [[ -e "${TARGET_HW_CONFIG}" || -L "${TARGET_HW_CONFIG}" ]]; then
@@ -1112,55 +1160,13 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
     else
         warn "Skipped hardware configuration generation."
     fi
-elif [[ "$AUTO_MODE" == "true" ]]; then
-    if [[ ! -f "${TARGET_HW_CONFIG}" ]] || [[ "$FIRST_TIME" == "true" ]]; then
-        info "Automatic mode: Generating hardware configuration..."
-        if [[ -e "${TARGET_HW_CONFIG}" || -L "${TARGET_HW_CONFIG}" ]]; then
-            mv "${TARGET_HW_CONFIG}" "${TARGET_HW_CONFIG_BAK}"
-        fi
-        sudo nixos-generate-config --show-hardware-config | tee "${TARGET_HW_CONFIG}" >/dev/null
-        success "Generated hardware configuration."
-    else
-        info "Automatic mode: Skipping hardware configuration generation (already exists)."
-    fi
 fi
 
 # --- 3. Finalization ---
 step "Final step"
 detail "You can manage your system with mn.sh or forge.sh."
 
-if [[ "$AUTO_MODE" == "true" ]]; then
-    info "Automatic mode: Applying configuration with the detected/default local configuration."
-    detail "NixOS target : ${hostname_value}"
-    detail "Home target  : ${username}"
-    detail "Profile      : ${package_profile}"
-    detail "Virtual      : ${enable_virtualization}"
-    detail "Fingerprint  : ${enable_fingerprint}"
-    detail "This will run: sudo nixos-rebuild switch --flake path:${LOCAL_DIR}#${hostname_value}"
-    detail "Then it will run: home-manager switch -b md4nbak --flake path:${LOCAL_DIR}#${username}"
-    
-    # Refresh sudo credentials
-    sudo -v
-    
-    # 1. Apply NixOS
-    info "Applying NixOS configuration..."
-    sudo nixos-rebuild switch --flake "path:${LOCAL_DIR}#${hostname_value}"
-
-    # 2. Apply Home Manager
-    info "Applying Home Manager configuration..."
-    home-manager switch -b md4nbak --flake "path:${LOCAL_DIR}#${username}"
-    
-    success "Configuration applied successfully."
-
-    if is_interactive && [[ "$enable_fingerprint" == "true" ]]; then
-        info "Fingerprint authentication is enabled in the generated configuration."
-        detail "If you continue, configure-local will launch: fprintd-enroll ${username}"
-        read -r -p "Enroll a fingerprint now? [y/N] " enroll_fingerprint_now
-        if [[ "$enroll_fingerprint_now" =~ ^[yY]$ ]]; then
-            run_fingerprint_enroll "$username" || warn "Fingerprint enrollment did not complete. You can retry later with: fprintd-enroll ${username}"
-        fi
-    fi
-elif is_interactive; then
+if is_interactive; then
     read -r -p "Would you like to apply the configuration now? (This will run forge.sh) [y/N] " apply_conf
     if [[ "$apply_conf" =~ ^[yY]$ ]]; then
         [[ -f "$FORGE_SCRIPT" ]] || error "Could not find forge.sh at ${FORGE_SCRIPT}"
