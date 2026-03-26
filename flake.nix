@@ -79,7 +79,7 @@
       "home-manager/modules/packages/minimal.nix"
       "home-manager/modules/packages/full.nix"
       "home-manager/modules/packages/custom.nix"
-      "home-manager/modules/packages/max.nix"
+      "home-manager/modules/packages/w4t4r.nix"
     ];
     shellFiles = [
       "install.sh"
