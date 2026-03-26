@@ -83,6 +83,9 @@
     shellFiles = [
       "install.sh"
       "scripts/bootstrap.sh"
+      "scripts/configure-local.sh"
+      "scripts/configure-niri-outputs.sh"
+      "scripts/configure-displays.sh"
       "scripts/setup.sh"
       "scripts/forge.sh"
       "scripts/mn.sh"
@@ -90,6 +93,7 @@
       "scripts/tune.sh"
       "scripts/prune-backups.sh"
       "scripts/fix-script-permissions.sh"
+      "scripts/lib/display-config.sh"
     ];
   in {
     formatter.${system} = pkgs.alejandra;

@@ -8,7 +8,7 @@ MD4N is a personal NixOS and Home Manager configuration published as a reusable 
 
 Do not ask users to hand-edit `user.local.nix`.
 
-- Machine-local values should be generated through `bash scripts/setup.sh`.
+- Machine-local values should be generated through `bash scripts/configure-local.sh`.
 - Shared defaults belong in `user.nix`.
 - Reusable behavior belongs in `nixos/`, `home-manager/`, or `scripts/`.
 - Runtime-only machine files under `~/.local/share/md4n/` should stay out of Git.
@@ -26,7 +26,7 @@ Before opening a change, run the checks you can on a NixOS machine and include t
 
 - `direnv allow` (optional, for the local validation shell)
 - `nix flake check`
-- `bash scripts/setup.sh`
+- `bash scripts/configure-local.sh`
 - `bash scripts/forge.sh --home`
 - `bash scripts/forge.sh --os`
 

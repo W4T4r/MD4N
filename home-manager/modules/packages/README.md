@@ -1,7 +1,7 @@
 # Package Profiles
 
 This directory holds the Home Manager package layers selected by `user.packageProfile`.
-The profile is chosen during `scripts/setup.sh` and then imported by `home.nix`.
+The profile is chosen during `scripts/configure-local.sh` and then imported by `home.nix`.
 
 ## Profiles
 

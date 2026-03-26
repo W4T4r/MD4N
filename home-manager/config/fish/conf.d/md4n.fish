@@ -1,6 +1,6 @@
 set -g fish_greeting ""
 
-set -l shared_env_file "$HOME/.config/md4n/fish/md4n-env.fish"
+set -l shared_env_file "$HOME/.config/md4n/generated/fish/env.fish"
 if test -f "$shared_env_file"
     source "$shared_env_file"
 else
@@ -16,7 +16,7 @@ end
 
 fastfetch
 
-set -l local_conf_dir "$HOME/.config/fish/conf.d/local"
+set -l local_conf_dir "$HOME/.config/md4n/local/fish/conf.d"
 if test -d "$local_conf_dir"
     for file in $local_conf_dir/*.fish
         if test -f "$file"

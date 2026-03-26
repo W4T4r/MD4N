@@ -29,7 +29,7 @@ This top-level README is the operator guide: how to install it, regenerate machi
 
 - This repository targets NixOS on `x86_64-linux`.
 - Shared defaults live in [user.nix](user.nix).
-- Machine-local answers are generated into `user.local.nix` by [scripts/setup.sh](scripts/setup.sh).
+- Machine-local answers are generated into `user.local.nix` by [scripts/configure-local.sh](scripts/configure-local.sh).
 - Generated local state should be regenerated through the scripts, not hand-edited.
 - `direnv` users can run `direnv allow` in the repository root to load the local validation toolchain automatically.
 
@@ -47,7 +47,7 @@ The normal flow is:
 
 1. [install.sh](install.sh)
 2. [scripts/bootstrap.sh](scripts/bootstrap.sh)
-3. [scripts/setup.sh](scripts/setup.sh)
+3. [scripts/configure-local.sh](scripts/configure-local.sh)
 4. [scripts/forge.sh](scripts/forge.sh)
 
 ## Daily Use
@@ -55,11 +55,13 @@ The normal flow is:
 Use the script layer instead of raw commands whenever possible.
 
 - Open the main console with [scripts/mn.sh](scripts/mn.sh)
+- Regenerate machine-local answers with [scripts/configure-local.sh](scripts/configure-local.sh)
+- Regenerate Niri display outputs with [scripts/configure-niri-outputs.sh](scripts/configure-niri-outputs.sh)
 - Apply changes with [scripts/forge.sh](scripts/forge.sh)
 - Roll back with [scripts/rollback.sh](scripts/rollback.sh)
 - Clean up and maintain generations with [scripts/tune.sh](scripts/tune.sh)
 
-If you need to change machine-local answers later, re-run [scripts/setup.sh](scripts/setup.sh) and then apply again.
+If you need to change machine-local answers later, re-run [scripts/configure-local.sh](scripts/configure-local.sh) and then apply again.
 
 For input methods, the shared setup now keeps Japanese input on Fcitx5 through
 Hazkey and Mozc, and Simplified Chinese input on Fcitx5 through Rime.
@@ -106,7 +108,7 @@ git rebase upstream/main
 git push origin main
 ```
 
-When moving to another machine or changing local answers, regenerate the local state with [scripts/setup.sh](scripts/setup.sh) instead of editing `user.local.nix` manually.
+When moving to another machine or changing local answers, regenerate the local state with [scripts/configure-local.sh](scripts/configure-local.sh) instead of editing `user.local.nix` manually.
 
 If you maintain a fork, keep your machine-specific or taste-specific additions inside the `personal` profile and related optional modules.
 
@@ -143,7 +145,7 @@ Use these documents when you want the detailed explanation for each area:
 - Input methods are configured around Fcitx5, with Hazkey and Mozc for Japanese and Rime for Simplified Chinese
 - GNOME is present as a compatibility layer, not as the primary desktop
 - The repository scripts are added to `PATH` through Home Manager
-- Niri keeps shared config in the repo, generates `outputs.kdl` into `~/.config/niri/`, and keeps `browser.sh` under `~/.config/md4n/niri/`
+- Niri keeps shared config in the repo, generates `outputs.local.kdl` into `~/.config/niri/`, and keeps `browser.sh` under `~/.config/md4n/generated/niri/`
 
 ## License
 

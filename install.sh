@@ -12,7 +12,7 @@ NC='\033[0m'
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BOOTSTRAP_SCRIPT="${ROOT_DIR}/scripts/bootstrap.sh"
-SETUP_SCRIPT="${ROOT_DIR}/scripts/setup.sh"
+CONFIGURE_LOCAL_SCRIPT="${ROOT_DIR}/scripts/configure-local.sh"
 USER_NIX_BAK="${ROOT_DIR}/user.nix.bak"
 
 info() { echo -e "${BLUE}[INFO]${NC} $1"; }
@@ -45,7 +45,7 @@ print_banner() {
     rule
     summary_row "Repository" "${ROOT_DIR}"
     summary_row "Current" "install.sh"
-    summary_row "Flow" "install.sh -> bootstrap.sh -> setup.sh"
+    summary_row "Flow" "install.sh -> bootstrap.sh -> configure-local.sh"
     summary_row "Next" "${BOOTSTRAP_SCRIPT}"
     rule
 }
@@ -75,7 +75,7 @@ esac
 print_banner
 info "This entrypoint cleans transient setup state and forwards into bootstrap."
 info "Delegating to: ${BOOTSTRAP_SCRIPT}"
-info "Bootstrap will then continue to: ${SETUP_SCRIPT}"
+info "Bootstrap will then continue to: ${CONFIGURE_LOCAL_SCRIPT}"
 if [[ -f "$USER_NIX_BAK" ]]; then
     warn "Removing stale backup: ${USER_NIX_BAK}"
     rm -f "$USER_NIX_BAK"

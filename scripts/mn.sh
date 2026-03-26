@@ -141,6 +141,8 @@ while true; do
     echo -e "  Menu       : ${DIM}choose a tool to launch${NC}\n"
 
     options=(
+        "local      regenerate machine-local configuration"
+        "display    regenerate Niri display outputs"
         "forge      apply configuration"
         "rollback   revert to previous generation"
         "tune       maintenance console"
@@ -154,6 +156,8 @@ while true; do
     main_choice="$MENU_SELECTION"
 
     case "$main_choice" in
+        local)    bash "${SCRIPT_DIR}/configure-local.sh" ;;
+        display)  bash "${SCRIPT_DIR}/configure-niri-outputs.sh" ;;
         forge)    bash "${SCRIPT_DIR}/forge.sh" ;;
         rollback) bash "${SCRIPT_DIR}/rollback.sh" ;;
         tune)     bash "${SCRIPT_DIR}/tune.sh" ;;
