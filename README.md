@@ -70,8 +70,9 @@ Use the script layer instead of raw commands whenever possible.
 If you need to change machine-local answers later, re-run [scripts/configure-local.sh](scripts/configure-local.sh) and then apply again.
 
 For input methods, the shared setup now keeps Japanese input on Fcitx5 through
-Hazkey and Mozc, and Simplified Chinese input on Fcitx5 through Rime.
-The detailed Fcitx5 and Rime layout is documented in
+Hazkey and Mozc, and Simplified Chinese input on Fcitx5 through Pinyin from
+`fcitx5-chinese-addons`.
+The detailed Fcitx5 layout is documented in
 [home-manager/config/fcitx5/README.md](home-manager/config/fcitx5/README.md).
 
 ## Local Validation
@@ -135,7 +136,7 @@ Use these documents when you want the detailed explanation for each area:
 - [Home Manager Package Profiles](home-manager/modules/packages/README.md): the role of `minimal` and `full`
 - [Local Overrides](local/README.md): what belongs under the repository-local state directory
 - [Shared Config Tree](home-manager/config/README.md): what belongs under the repository-managed config tree
-- [Fcitx5 and Rime](home-manager/config/fcitx5/README.md): Japanese and Chinese input layout, shared profile, and Rime deployment
+- [Fcitx5](home-manager/config/fcitx5/README.md): Japanese and Chinese input layout and shared profile
 - [Desktop Entry Overrides](home-manager/applications/README.md): how `.desktop` overrides are organized
 - [Wallpapers](home-manager/Wallpapers/README.md): wallpaper assets bundled with the setup
 - [Scripts](scripts/README.md): install, apply, rollback, and maintenance workflow
@@ -156,7 +157,7 @@ Use these documents when you want the detailed explanation for each area:
 ## Notes
 
 - Wayland-first desktop centered on Niri and Noctalia
-- Input methods are configured around Fcitx5, with Hazkey and Mozc for Japanese and Rime for Simplified Chinese
+- Input methods are configured around Fcitx5, with Hazkey and Mozc for Japanese and Pinyin for Simplified Chinese
 - GNOME is present as a compatibility layer, not as the primary desktop
 - The repository scripts are added to `PATH` through Home Manager
 - Niri and Fish keep shared config in the repo while allowing a few ignored machine-local files to live beside the linked trees
