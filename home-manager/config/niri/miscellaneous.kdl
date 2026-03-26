@@ -14,6 +14,9 @@ spawn-sh-at-startup "fish ~/.config/niri/scripts/polkit.sh"
 spawn-at-startup "noctalia-shell"
 spawn-sh-at-startup "input-remapper-control --command autoload"
 spawn-sh-at-startup "clipse -listen"
+spawn-sh-at-startup "systemctl --user import-environment DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR GTK_IM_MODULE QT_IM_MODULE SDL_IM_MODULE XMODIFIERS GLFW_IM_MODULE NIRI_SOCKET"
+spawn-sh-at-startup "dbus-update-activation-environment --systemd DISPLAY WAYLAND_DISPLAY XDG_CURRENT_DESKTOP XDG_SESSION_TYPE DBUS_SESSION_BUS_ADDRESS XDG_RUNTIME_DIR GTK_IM_MODULE QT_IM_MODULE SDL_IM_MODULE XMODIFIERS GLFW_IM_MODULE NIRI_SOCKET"
+spawn-sh-at-startup "systemctl --user restart fcitx5-daemon.service"
 // spawn-at-startup "waybar"
 // spawn-sh-at-startup "systemctl --user restart waybar"
 
@@ -45,7 +48,12 @@ xwayland-satellite {
 environment {
     EDITOR "nvim"
     TERMINAL "kitty"
+    GLFW_IM_MODULE "ibus"
+    GTK_IM_MODULE "fcitx"
+    QT_IM_MODULE "fcitx"
     QT_QPA_PLATFORMTHEME "qt6ct"
+    SDL_IM_MODULE "fcitx"
+    XMODIFIERS "@im=fcitx"
     // QT_QPA_PLATFORM "wayland"
     // DISPLAY null
 }

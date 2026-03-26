@@ -17,22 +17,17 @@ let
   gitEmail = "";
   packageProfile = "full";
   enableLocalFonts = false;
-  enableBcompare5 = true;
   enableVesktop = true;
   enableCava = true;
-  enableGeminiCli = true;
   enableCodex = true;
   enableClaudeCode = true;
   enableGoogleChrome = true;
   enableThunderbird = true;
-  enableObsStudio = true;
-  enableDavinciResolve = true;
   enableZotero = true;
   enablePodmanDesktop = true;
   enableDistrobox = true;
   enableDistroshelf = true;
   enableTexliveFull = true;
-  enableGlobalProtect = true;
   enableVirtualization = true;
   enableVirtManager = true;
   enableOllama = true;
@@ -51,5 +46,5 @@ let
   niriBrowserScript = "${home}/.config/md4n/generated/niri/browser.sh";
   niriOutputsFile = "${home}/.config/niri/outputs.local.kdl";
 in {
-  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableLocalFonts enableBcompare5 enableVesktop enableCava enableGeminiCli enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtualization enableVirtManager enableOllama enableSteam gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile browser niriBrowserScript niriOutputsFile;
+  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableLocalFonts enableVesktop enableCava enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableVirtualization enableVirtManager enableOllama enableSteam gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile browser niriBrowserScript niriOutputsFile;
 }
