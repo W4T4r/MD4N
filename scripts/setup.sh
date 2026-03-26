@@ -998,7 +998,7 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
                 enable_virt_manager="false"
             fi
         elif [[ "$package_profile" == "minimal" ]]; then
-            enable_bcompare5="false"
+    enable_bcompare5="true"
             enable_vesktop="false"
             enable_cava="false"
             enable_gemini_cli="false"
@@ -1013,7 +1013,7 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
             enable_distrobox="false"
             enable_distroshelf="false"
             enable_texlive_full="false"
-            enable_global_protect="false"
+    enable_global_protect="true"
             enable_virtualization="false"
             enable_virt_manager="false"
             enable_ollama="false"
