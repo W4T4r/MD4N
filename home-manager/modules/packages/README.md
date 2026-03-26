@@ -9,10 +9,8 @@ The profile is chosen during `scripts/setup.sh` and then imported by `home.nix`.
   Baseline user package set with a lighter footprint.
 - `full.nix`
   Default workstation-oriented package set.
-- `custom.nix`
-  Starts from the lighter baseline and adds packages based on the interactive answers collected during setup.
-- `w4t4r.nix`
-  Personal all-in profile with a broad package set enabled by design.
+- `personal.nix`
+  Fork-oriented personal all-in profile with a broad package set enabled by design.
 
 ## Why This Exists
 

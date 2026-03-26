@@ -78,8 +78,7 @@
       "home-manager/modules/fonts.nix"
       "home-manager/modules/packages/minimal.nix"
       "home-manager/modules/packages/full.nix"
-      "home-manager/modules/packages/custom.nix"
-      "home-manager/modules/packages/w4t4r.nix"
+      "home-manager/modules/packages/personal.nix"
     ];
     shellFiles = [
       "install.sh"

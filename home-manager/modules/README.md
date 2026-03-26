@@ -12,9 +12,9 @@ These modules are the main composition layer for the user environment and are in
 - `services.nix`
   User-space services such as `gnome-keyring` and Hazkey integration.
 - `fonts.nix`
-  Optional W4T4r personal font defaults enabled only when the generated local settings opt into that personal font module.
+  Optional personal font defaults enabled only when the generated local settings opt into that personal font module.
 - `packages/`
-  Profile-specific package lists for `minimal`, `full`, `custom`, and `w4t4r`.
+  Profile-specific package lists for `minimal`, `full`, and `personal`.
 
 ## Design Notes
 

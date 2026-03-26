@@ -89,8 +89,7 @@ Current profiles:
 
 - `minimal`: lighter baseline with virtualization disabled
 - `full`: default workstation profile
-- `custom`: interactive profile built from prompt-by-prompt choices
-- `w4t4r`: personal all-in preset after explicit confirmation
+- `personal`: fork-oriented personal all-in preset after explicit confirmation
 
 ## Updating Your Fork
 
@@ -109,25 +108,7 @@ git push origin main
 
 When moving to another machine or changing local answers, regenerate the local state with [scripts/setup.sh](scripts/setup.sh) instead of editing `user.local.nix` manually.
 
-If you fork this repository and want to rename the personal profile for your own use, change these places together:
-
-- [scripts/setup.sh](scripts/setup.sh)
-  Update `USER_PACKAGE_PROFILE` near the top of the script. The setup prompts and profile comparisons use that variable instead of hard-coded string checks.
-- [home-manager/home.nix](home-manager/home.nix)
-  Update `userPackageProfile` so Home Manager imports your renamed personal package layer.
-- [home-manager/modules/packages/w4t4r.nix](home-manager/modules/packages/w4t4r.nix)
-  Rename the file to match your profile name.
-- [README.md](README.md) and [home-manager/modules/packages/README.md](home-manager/modules/packages/README.md)
-  Update the displayed profile name in the docs.
-
-If you also want to rename the personal font toggle, update:
-
-- [user.nix](user.nix)
-  Rename `enableW4T4rFonts`.
-- [scripts/setup.sh](scripts/setup.sh)
-  Rename the generated field and prompt text.
-- [home-manager/home.nix](home-manager/home.nix)
-  Update the condition that decides when to import [fonts.nix](home-manager/modules/fonts.nix).
+If you maintain a fork, keep your machine-specific or taste-specific additions inside the `personal` profile and related optional modules.
 
 ## Repository Guide
 
@@ -137,7 +118,7 @@ Use these documents when you want the detailed explanation for each area:
 - [NixOS Modules](nixos/modules/README.md): what each system module is responsible for
 - [Home Manager Overview](home-manager/README.md): user-level structure and how files are linked into the home directory
 - [Home Manager Modules](home-manager/modules/README.md): core, programs, services, fonts, and package layering
-- [Home Manager Package Profiles](home-manager/modules/packages/README.md): the role of `minimal`, `full`, `custom`, and `w4t4r`
+- [Home Manager Package Profiles](home-manager/modules/packages/README.md): the role of `minimal`, `full`, and `personal`
 - [Shared Config Tree](home-manager/config/README.md): what belongs under the repository-managed config tree
 - [Fcitx5 and Rime](home-manager/config/fcitx5/README.md): Japanese and Chinese input layout, shared profile, and Rime deployment
 - [Desktop Entry Overrides](home-manager/applications/README.md): how `.desktop` overrides are organized

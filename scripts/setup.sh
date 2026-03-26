@@ -69,7 +69,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 USER_NIX="${ROOT_DIR}/user.nix"
 USER_LOCAL_NIX="${ROOT_DIR}/user.local.nix"
-USER_PACKAGE_PROFILE="w4t4r"
+USER_PACKAGE_PROFILE="personal"
 FORGE_SCRIPT="${ROOT_DIR}/scripts/forge.sh"
 
 detect_locale() {
@@ -296,7 +296,7 @@ validate_git_email() {
 }
 
 validate_package_profile() {
-    [[ "$1" == "minimal" || "$1" == "full" || "$1" == "custom" || "$1" == "$USER_PACKAGE_PROFILE" ]]
+    [[ "$1" == "minimal" || "$1" == "full" || "$1" == "$USER_PACKAGE_PROFILE" ]]
 }
 
 validate_gpu_vendor() {
@@ -627,8 +627,7 @@ print_package_profile_choices() {
     detail "Package profiles:"
     detail "  - minimal : lighter package set"
     detail "  - full    : default workstation profile"
-    detail "  - custom  : full base intended for local tailoring"
-    detail "  - ${USER_PACKAGE_PROFILE} : personal all-in profile, enables nearly everything"
+    detail "  - ${USER_PACKAGE_PROFILE} : fork-oriented personal all-in profile"
 }
 
 print_gpu_vendor_choices() {
@@ -660,7 +659,7 @@ print_timezone_help() {
 }
 
 print_font_preferences_help() {
-    detail "W4T4r font preferences toggle the dedicated personal font module."
+    detail "Personal font preferences toggle the dedicated personal font module."
     detail "This is intentionally a personal override, not a repository-wide default."
     detail "Edit: ${ROOT_DIR}/home-manager/modules/fonts.nix"
     detail "To change the on/off state later, re-run: bash ${ROOT_DIR}/scripts/setup.sh"
@@ -750,41 +749,6 @@ prompt_optional_full_packages() {
     enable_texlive_full=$(prompt_bool_with_default "Include TeX Live Full?" "true")
     enable_global_protect=$(prompt_bool_with_default "Include GlobalProtect OpenConnect?" "true")
     enable_virt_manager=$(prompt_bool_with_default "Include virt-manager and libvirt helper tools?" "true")
-}
-
-prompt_custom_profile_packages() {
-    detail "Custom profile additions:"
-    detail "You will be asked about apps and services that are outside the minimal baseline."
-
-    enable_bcompare5=$(prompt_bool_with_default "Include Beyond Compare 5 integration?" "true")
-    enable_vesktop=$(prompt_bool_with_default "Include Vesktop?" "true")
-    enable_cava=$(prompt_bool_with_default "Include CAVA?" "true")
-    enable_gemini_cli=$(prompt_bool_with_default "Include Gemini CLI?" "true")
-    enable_codex=$(prompt_bool_with_default "Include Codex?" "true")
-    enable_claude_code=$(prompt_bool_with_default "Include Claude Code?" "true")
-    detail "Google Chrome note: if you sign in with fprintd-based login, Chrome may still ask for your password."
-    enable_google_chrome=$(prompt_bool_with_default "Include Google Chrome?" "true")
-    enable_thunderbird=$(prompt_bool_with_default "Include Thunderbird?" "true")
-    enable_obs_studio=$(prompt_bool_with_default "Include OBS Studio?" "true")
-    enable_davinci_resolve=$(prompt_bool_with_default "Include DaVinci Resolve?" "true")
-    enable_zotero=$(prompt_bool_with_default "Include Zotero?" "true")
-    enable_ollama=$(prompt_bool_with_default "Enable Ollama service?" "true")
-    enable_steam=$(prompt_bool_with_default "Enable Steam?" "true")
-    enable_texlive_full=$(prompt_bool_with_default "Include TeX Live Full?" "true")
-    enable_global_protect=$(prompt_bool_with_default "Include GlobalProtect OpenConnect?" "true")
-
-    if [[ "$enable_virtualization" == "true" ]]; then
-        enable_podman_desktop=$(prompt_bool_with_default "Include Podman Desktop?" "true")
-        enable_distrobox=$(prompt_bool_with_default "Include Distrobox?" "true")
-        enable_distroshelf=$(prompt_bool_with_default "Include Distroshelf?" "true")
-        enable_virt_manager=$(prompt_bool_with_default "Include virt-manager and libvirt helper tools?" "true")
-    else
-        detail "Virtualization environment disabled: skipping Podman, Distrobox, Distroshelf, and virt-manager prompts."
-        enable_podman_desktop="false"
-        enable_distrobox="false"
-        enable_distroshelf="false"
-        enable_virt_manager="false"
-    fi
 }
 
 run_fingerprint_enroll() {
@@ -986,7 +950,7 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
         apply_user_profile_defaults
     else
         print_font_preferences_help
-        enable_custom_fonts=$(prompt_bool_with_default "Enable W4T4r personal font preferences?" "false")
+        enable_custom_fonts=$(prompt_bool_with_default "Enable personal font preferences?" "false")
 
         enable_virtualization="true"
         if [[ "$package_profile" != "minimal" ]]; then
@@ -1033,8 +997,6 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
                 enable_distroshelf="false"
                 enable_virt_manager="false"
             fi
-        elif [[ "$package_profile" == "custom" ]]; then
-            prompt_custom_profile_packages
         elif [[ "$package_profile" == "minimal" ]]; then
             enable_bcompare5="false"
             enable_vesktop="false"
@@ -1240,8 +1202,6 @@ else
                 enable_distroshelf="false"
                 enable_virt_manager="false"
             fi
-        elif [[ "$package_profile" == "custom" ]]; then
-            prompt_custom_profile_packages
         fi
     elif [[ "$package_profile" == "$USER_PACKAGE_PROFILE" ]]; then
         apply_user_profile_defaults
@@ -1383,7 +1343,7 @@ let
   gitName = "$(escape_nix_string "$git_name")";
   gitEmail = "$(escape_nix_string "$git_email")";
   packageProfile = "$(escape_nix_string "$package_profile")";
-  enableW4T4rFonts = $(render_nix_bool "$enable_custom_fonts");
+  enablePersonalFonts = $(render_nix_bool "$enable_custom_fonts");
   enableBcompare5 = $(render_nix_bool "$enable_bcompare5");
   enableVesktop = $(render_nix_bool "$enable_vesktop");
   enableCava = $(render_nix_bool "$enable_cava");
@@ -1419,7 +1379,7 @@ let
   niriOutputsFile = "\${home}/.config/niri/outputs.kdl";
 in
 {
-  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableW4T4rFonts enableBcompare5 enableVesktop enableCava enableGeminiCli enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtualization enableVirtManager enableOllama enableSteam browser gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile niriBrowserScript niriOutputsFile;
+  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enablePersonalFonts enableBcompare5 enableVesktop enableCava enableGeminiCli enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtualization enableVirtManager enableOllama enableSteam browser gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile niriBrowserScript niriOutputsFile;
 }
 EOF
 
