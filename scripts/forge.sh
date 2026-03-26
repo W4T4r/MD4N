@@ -134,7 +134,10 @@ Options:
   --os            Apply only the NixOS configuration
   --home          Apply only the Home Manager configuration
   --all           Apply both NixOS and Home Manager configurations
-  --update        Update the flake.lock before applying
+  --update        Alias for --update-all
+  --update-root   Update only the shared root flake.lock before applying
+  --update-local  Update only local/flake.lock before applying
+  --update-all    Update both the shared root flake.lock and local/flake.lock before applying
   --no-backup     Disable the md4nbak backup for Home Manager
   --help          Show this help
 
@@ -160,25 +163,61 @@ choose_target() {
         "os      apply only the NixOS configuration" \
         "home    apply only the Home Manager configuration" \
         "all     apply both" \
-        "update  update flake.lock"; then
+        "update-root  update only the shared root flake.lock" \
+        "update-local update only local/flake.lock" \
+        "update-all   update both root and local flake locks"; then
         echo "Returning to Top..."
         exit 0
     fi
     target_mode="$MENU_SELECTION"
 }
 
-apply_update() {
-    local root_dir=$1
-
+update_flake_dir() {
+    local flake_dir=$1
+    local label=$2
     require_command nix
-    require_command sudo
+
+    info "Updating ${label} flake.lock..."
+    detail "Command: nix flake update --flake ${flake_dir}"
+    nix flake update --flake "${flake_dir}"
+}
+
+require_local_flake() {
+    local local_flake_file=$1
+
+    [[ -f "$local_flake_file" ]] || error "Could not find ${local_flake_file}. Run setup first."
+}
+
+apply_update() {
+    local update_scope=$1
+    local root_dir=$2
+    local local_flake_file=$3
+    local local_dir=$4
 
     section "Flake Update"
-    info "Updating flake.lock..."
-    detail "Command: sudo nix flake update --flake ${root_dir}"
-    sudo -v
-    sudo nix flake update --flake "${root_dir}"
-    success "Flake updated successfully."
+    case "$update_scope" in
+        root)
+            update_flake_dir "$root_dir" "root"
+            success "Root flake lock updated successfully."
+            ;;
+        local)
+            require_local_flake "$local_flake_file"
+            update_flake_dir "$local_dir" "local"
+            success "Local flake lock updated successfully."
+            ;;
+        all)
+            update_flake_dir "$root_dir" "root"
+            if [[ -f "$local_flake_file" ]]; then
+                update_flake_dir "$local_dir" "local"
+            else
+                detail "Local flake not found. Skipping local lock update."
+            fi
+            success "Requested flake locks updated successfully."
+            ;;
+        *)
+            error "Unsupported update scope: $update_scope"
+            ;;
+    esac
 }
 
 apply_system() {
@@ -240,7 +279,7 @@ fi
 
 apply_system_flag=true
 apply_home_flag=true
-apply_update_flag=false
+update_scope=""
 home_backup=true
 target_mode=""
 
@@ -262,7 +301,16 @@ while [[ $# -gt 0 ]]; do
             target_mode="all"
             ;;
         --update)
-            apply_update_flag=true
+            update_scope="all"
+            ;;
+        --update-root)
+            update_scope="root"
+            ;;
+        --update-local)
+            update_scope="local"
+            ;;
+        --update-all)
+            update_scope="all"
             ;;
         --no-backup)
             home_backup=false
@@ -303,18 +351,28 @@ if [[ -z "$target_mode" ]]; then
             apply_system_flag=true
             apply_home_flag=true
             ;;
-        update)
-            apply_update_flag=true
+        update-root)
+            update_scope="root"
+            apply_system_flag=false
+            apply_home_flag=false
+            ;;
+        update-local)
+            update_scope="local"
+            apply_system_flag=false
+            apply_home_flag=false
+            ;;
+        update-all)
+            update_scope="all"
             apply_system_flag=false
             apply_home_flag=false
             ;;
     esac
 fi
 
-print_dashboard "$ROOT_DIR" "$USERNAME" "$HOSTNAME" "$target_mode" "$ACTIVE_FLAKE_DIR" "$apply_system_flag" "$apply_home_flag" "$apply_update_flag"
+print_dashboard "$ROOT_DIR" "$USERNAME" "$HOSTNAME" "$target_mode" "$ACTIVE_FLAKE_DIR" "$apply_system_flag" "$apply_home_flag" "${update_scope:-false}"
 
-if [[ "$apply_update_flag" == "true" ]]; then
-    apply_update "$ACTIVE_FLAKE_DIR"
+if [[ -n "$update_scope" ]]; then
+    apply_update "$update_scope" "$ROOT_DIR" "$LOCAL_FLAKE_FILE" "$LOCAL_DIR"
 fi
 
 if [[ "$apply_system_flag" == "true" ]]; then
