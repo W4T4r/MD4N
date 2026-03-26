@@ -39,3 +39,6 @@ Typical local-only uses:
 - Put machine-specific Home Manager programs in `local/home-manager/programs.nix`.
 - Put machine-specific Home Manager packages in `local/home-manager/packages.nix`.
 - Put local-only flake inputs directly in `local/flake.nix`.
+
+For hand-maintained local overrides, prefer a separate private repository and link the runtime path to it.
+That keeps app-managed edits persistent without pushing them into the shared MD4N tree.

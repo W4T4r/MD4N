@@ -106,24 +106,23 @@ Current profiles:
 - `minimal`: lighter baseline with virtualization disabled
 - `full`: default workstation profile with Chrome, Thunderbird, and virtualization desktop helpers enabled by default
 
-## Updating Your Fork
+## Local State and Private Overrides
 
-If you maintain your own copy, keep reusable changes in Git and keep secrets or machine-local state out of Git.
+This repository is both the shared configuration base and the local operational checkout.
 
-Typical fork workflow:
+- Regenerate machine-local answers with [scripts/configure-local.sh](scripts/configure-local.sh) instead of editing `local/generated/user.nix` manually.
+- Keep generated machine state in `local/`.
+- Keep reusable defaults in the shared repository modules.
+- Keep secrets, licensed software wiring, and hand-maintained personal overrides out of the shared tree.
 
-```bash
-git clone git@github.com:<your-name>/MD4N.git
-cd MD4N
-git remote add upstream https://github.com/W4T4r/MD4N.git
-git fetch upstream
-git rebase upstream/main
-git push origin main
-```
+For local configuration that you want to maintain yourself over time, the recommended pattern is:
 
-When moving to another machine or changing local answers, regenerate the local state with [scripts/configure-local.sh](scripts/configure-local.sh) instead of editing `local/generated/user.nix` manually.
+1. Keep it in a separate private repository.
+2. Link the runtime path to that private repository.
+3. Let the shared MD4N repository manage only the reusable base and the generated machine state.
 
-If you maintain a fork, keep your machine-specific or taste-specific additions inside `local/` or in separate fork-specific modules instead of the shared defaults.
+This works especially well for app-managed config that is easier to edit in place, such as linked trees under `~/.config`.
+Examples include local shell snippets, window-manager runtime files, and application configs that are usually edited from inside the app itself.
 
 ## Repository Guide
 
