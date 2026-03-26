@@ -44,11 +44,6 @@ in {
       else []
     )
     ++ (
-      if user.enableGeminiCli or false
-      then [gemini-cli]
-      else []
-    )
-    ++ (
       if user.enableCodex or false
       then [codex]
       else []
@@ -66,16 +61,6 @@ in {
     ++ (
       if user.enableThunderbird or false
       then [thunderbird]
-      else []
-    )
-    ++ (
-      if user.enableObsStudio or false
-      then [obs-studio]
-      else []
-    )
-    ++ (
-      if user.enableDavinciResolve or false
-      then [davinci-resolve]
       else []
     )
     ++ (

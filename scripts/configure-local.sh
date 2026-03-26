@@ -440,8 +440,10 @@ ensure_local_scaffold() {
     sync_local_flake
     copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/home-manager/default.nix" "${LOCAL_HOME_MANAGER_DIR}/default.nix"
     copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/home-manager/packages.nix" "${LOCAL_HOME_MANAGER_DIR}/packages.nix"
+    copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/home-manager/programs.nix" "${LOCAL_HOME_MANAGER_DIR}/programs.nix"
     copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/home-manager/fonts.nix" "${LOCAL_HOME_MANAGER_DIR}/fonts.nix"
     copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/nixos/default.nix" "${LOCAL_NIXOS_DIR}/default.nix"
+    copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/nixos/packages.nix" "${LOCAL_NIXOS_DIR}/packages.nix"
     copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/nixos/swap.nix" "${LOCAL_NIXOS_DIR}/swap.nix"
     sync_local_hardware_stub
 }
@@ -450,6 +452,14 @@ print_virtualization_help() {
     detail "Virtualization environment:"
     detail "Enables Podman, libvirt, KVM group membership, and related desktop tools."
     detail "If disabled, virtualization modules and helper packages stay out of the system."
+}
+
+print_local_only_packages_help() {
+    detail "Local-only packages:"
+    detail "  - Beyond Compare 5: enable in local/home-manager/programs.nix when needed"
+    detail "  - OBS Studio: enable in local/home-manager/packages.nix when needed"
+    detail "  - DaVinci Resolve: enable in local/home-manager/packages.nix when needed"
+    detail "  - GlobalProtect OpenConnect: enable in local/nixos/packages.nix when needed"
 }
 
 prompt_bool_with_default() {
@@ -474,23 +484,65 @@ prompt_bool_with_default() {
     printf 'false'
 }
 
+set_ai_tools_state() {
+    local enabled=$1
+
+    enable_codex="$enabled"
+    enable_claude_code="$enabled"
+    enable_ollama="$enabled"
+}
+
+set_docs_tools_state() {
+    local enabled=$1
+
+    enable_zotero="$enabled"
+    enable_texlive_full="$enabled"
+}
+
+prompt_ai_tools() {
+    detail "AI tools bundle:"
+    detail "  - Codex"
+    detail "  - Claude Code"
+    detail "  - Ollama"
+
+    local enabled
+    enabled=$(prompt_bool_with_default "Enable AI tools bundle?" "true")
+    set_ai_tools_state "$enabled"
+}
+
+prompt_docs_tools() {
+    detail "Writing and research bundle:"
+    detail "  - TeX Live Full"
+    detail "  - Zotero"
+
+    local enabled
+    enabled=$(prompt_bool_with_default "Include TeX Live Full and Zotero?" "true")
+    set_docs_tools_state "$enabled"
+}
+
 prompt_optional_full_packages() {
     detail "Full profile optional packages:"
     detail "You will be asked about packages many users do not need."
+    print_local_only_packages_help
 
-    enable_bcompare5=$(prompt_bool_with_default "Include Beyond Compare 5 integration?" "true")
-    detail "Google Chrome note: if you sign in with fprintd-based login, Chrome may still ask for your password."
-    enable_google_chrome=$(prompt_bool_with_default "Include Google Chrome?" "true")
-    enable_thunderbird=$(prompt_bool_with_default "Include Thunderbird?" "true")
-    enable_obs_studio=$(prompt_bool_with_default "Include OBS Studio?" "true")
-    enable_davinci_resolve=$(prompt_bool_with_default "Include DaVinci Resolve?" "true")
-    enable_zotero=$(prompt_bool_with_default "Include Zotero?" "true")
-    enable_podman_desktop=$(prompt_bool_with_default "Include Podman Desktop?" "true")
+    prompt_ai_tools
+    prompt_docs_tools
     enable_distrobox=$(prompt_bool_with_default "Include Distrobox?" "true")
     enable_distroshelf=$(prompt_bool_with_default "Include Distroshelf?" "true")
-    enable_texlive_full=$(prompt_bool_with_default "Include TeX Live Full?" "true")
-    enable_global_protect=$(prompt_bool_with_default "Include GlobalProtect OpenConnect?" "true")
-    enable_virt_manager=$(prompt_bool_with_default "Include virt-manager and libvirt helper tools?" "true")
+}
+
+prompt_optional_full_packages_without_virtualization() {
+    detail "Full profile optional packages:"
+    detail "You will be asked about packages many users do not need."
+    detail "Virtualization environment disabled: Podman Desktop, Distrobox, Distroshelf, and virt-manager stay disabled."
+    print_local_only_packages_help
+
+    prompt_ai_tools
+    prompt_docs_tools
+    enable_podman_desktop="false"
+    enable_distrobox="false"
+    enable_distroshelf="false"
+    enable_virt_manager="false"
 }
 
 run_fingerprint_enroll() {
@@ -700,65 +752,36 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
         enable_virtualization=$(prompt_bool_with_default "Enable virtualization environment?" "true")
     fi
 
-    enable_bcompare5="true"
     enable_vesktop="true"
     enable_cava="true"
-    enable_gemini_cli="true"
-    enable_codex="true"
-    enable_claude_code="true"
+    set_ai_tools_state "true"
     enable_google_chrome="true"
     enable_thunderbird="true"
-    enable_obs_studio="true"
-    enable_davinci_resolve="true"
-    enable_zotero="true"
+    set_docs_tools_state "true"
     enable_podman_desktop="true"
     enable_distrobox="true"
     enable_distroshelf="true"
-    enable_texlive_full="true"
-    enable_global_protect="true"
     enable_virt_manager="true"
-    enable_ollama="true"
     enable_steam="true"
 
     if [[ "$package_profile" == "full" ]]; then
         if [[ "$enable_virtualization" == "true" ]]; then
             prompt_optional_full_packages
         else
-            detail "Virtualization environment disabled: skipping Podman, Distrobox, Distroshelf, and virt-manager prompts."
-            enable_bcompare5=$(prompt_bool_with_default "Include Beyond Compare 5 integration?" "true")
-            detail "Google Chrome note: if you sign in with fprintd-based login, Chrome may still ask for your password."
-            enable_google_chrome=$(prompt_bool_with_default "Include Google Chrome?" "true")
-            enable_thunderbird=$(prompt_bool_with_default "Include Thunderbird?" "true")
-            enable_obs_studio=$(prompt_bool_with_default "Include OBS Studio?" "true")
-            enable_davinci_resolve=$(prompt_bool_with_default "Include DaVinci Resolve?" "true")
-            enable_zotero=$(prompt_bool_with_default "Include Zotero?" "true")
-            enable_texlive_full=$(prompt_bool_with_default "Include TeX Live Full?" "true")
-            enable_global_protect=$(prompt_bool_with_default "Include GlobalProtect OpenConnect?" "true")
-            enable_podman_desktop="false"
-            enable_distrobox="false"
-            enable_distroshelf="false"
-            enable_virt_manager="false"
+            prompt_optional_full_packages_without_virtualization
         fi
     elif [[ "$package_profile" == "minimal" ]]; then
-        enable_bcompare5="false"
         enable_vesktop="false"
         enable_cava="false"
-        enable_gemini_cli="false"
-        enable_codex="false"
-        enable_claude_code="false"
+        set_ai_tools_state "false"
         enable_google_chrome="false"
         enable_thunderbird="false"
-        enable_obs_studio="false"
-        enable_davinci_resolve="false"
-        enable_zotero="false"
+        set_docs_tools_state "false"
         enable_podman_desktop="false"
         enable_distrobox="false"
         enable_distroshelf="false"
-        enable_texlive_full="false"
-        enable_global_protect="false"
         enable_virtualization="false"
         enable_virt_manager="false"
-        enable_ollama="false"
         enable_steam="false"
     elif [[ "$enable_virtualization" != "true" ]]; then
         enable_podman_desktop="false"
@@ -824,25 +847,17 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
     detail "Git email: ${git_email:-<unset>}"
     detail "Profile  : ${package_profile}"
     detail "Fonts    : ${enable_custom_fonts}"
-    detail "BCompare : ${enable_bcompare5}"
     detail "Vesktop  : ${enable_vesktop}"
     detail "CAVA     : ${enable_cava}"
-    detail "Gemini   : ${enable_gemini_cli}"
-    detail "Codex    : ${enable_codex}"
-    detail "Claude   : ${enable_claude_code}"
+    detail "AI tools : codex=${enable_codex} claude=${enable_claude_code} ollama=${enable_ollama}"
     detail "Chrome   : ${enable_google_chrome}"
     detail "Mail     : ${enable_thunderbird}"
-    detail "OBS      : ${enable_obs_studio}"
-    detail "Resolve  : ${enable_davinci_resolve}"
-    detail "Zotero   : ${enable_zotero}"
+    detail "Docs     : tex=${enable_texlive_full} zotero=${enable_zotero}"
     detail "Podman UI: ${enable_podman_desktop}"
     detail "Distrobox: ${enable_distrobox}"
     detail "Shelf    : ${enable_distroshelf}"
-    detail "TeX Live : ${enable_texlive_full}"
-    detail "GP VPN   : ${enable_global_protect}"
     detail "Virtual  : ${enable_virtualization}"
     detail "Virt Mgr : ${enable_virt_manager}"
-    detail "Ollama   : ${enable_ollama}"
     detail "Steam    : ${enable_steam}"
     detail "Browser  : ${browser_choice}"
     detail "GPU      : ${gpu_vendor}"
@@ -850,6 +865,7 @@ if is_interactive && [[ "$AUTO_MODE" == "false" ]]; then
     detail "Dualboot : ${enable_dual_boot}"
     detail "Hibernate: ${enable_hibernate}"
     detail "Dotfiles : ${dotroot}"
+    detail "Local-only packages: Beyond Compare 5 -> local/home-manager/programs.nix, OBS Studio and DaVinci Resolve -> local/home-manager/packages.nix, GlobalProtect OpenConnect -> local/nixos/packages.nix"
 else
     # Automatic or non-interactive defaults
     if [[ "$AUTO_MODE" == "true" ]]; then
@@ -872,25 +888,17 @@ else
     git_name=${DEFAULT_GIT_NAME:-$DEFAULT_FULLNAME}
     git_email=$DEFAULT_GIT_EMAIL
     enable_custom_fonts="false"
-    enable_bcompare5="true"
     enable_vesktop="true"
     enable_cava="true"
-    enable_gemini_cli="true"
-    enable_codex="true"
-    enable_claude_code="true"
+    set_ai_tools_state "true"
     enable_google_chrome="true"
     enable_thunderbird="true"
-    enable_obs_studio="true"
-    enable_davinci_resolve="true"
-    enable_zotero="true"
+    set_docs_tools_state "true"
     enable_podman_desktop="true"
     enable_distrobox="true"
     enable_distroshelf="true"
-    enable_texlive_full="true"
-    enable_global_protect="true"
     enable_virtualization="true"
     enable_virt_manager="true"
-    enable_ollama="true"
     enable_steam="true"
     browser_choice=$DEFAULT_BROWSER
     gpu_vendor=$(normalize_gpu_vendor "$DEFAULT_GPU_VENDOR")
@@ -899,45 +907,27 @@ else
     enable_hibernate="false"
 
     if [[ "$package_profile" == "minimal" ]]; then
-        enable_bcompare5="false"
         enable_vesktop="false"
         enable_cava="false"
-        enable_gemini_cli="false"
-        enable_codex="false"
-        enable_claude_code="false"
+        set_ai_tools_state "false"
         enable_google_chrome="false"
         enable_thunderbird="false"
-        enable_obs_studio="false"
-        enable_davinci_resolve="false"
-        enable_zotero="false"
+        set_docs_tools_state "false"
         enable_virtualization="false"
         enable_podman_desktop="false"
         enable_distrobox="false"
         enable_distroshelf="false"
         enable_virt_manager="false"
-        enable_texlive_full="false"
-        enable_global_protect="false"
-        enable_ollama="false"
         enable_steam="false"
     elif [[ "$AUTO_MODE" == "true" ]]; then
         print_virtualization_help
         enable_virtualization=$(prompt_bool_with_default "Enable virtualization environment?" "true")
 
-        if [[ "$enable_virtualization" != "true" ]]; then
-            enable_podman_desktop="false"
-            enable_distrobox="false"
-            enable_distroshelf="false"
-            enable_virt_manager="false"
-        fi
-
         if [[ "$package_profile" == "full" ]]; then
-            prompt_optional_full_packages
-
             if [[ "$enable_virtualization" != "true" ]]; then
-                enable_podman_desktop="false"
-                enable_distrobox="false"
-                enable_distroshelf="false"
-                enable_virt_manager="false"
+                prompt_optional_full_packages_without_virtualization
+            else
+                prompt_optional_full_packages
             fi
         fi
     fi
@@ -963,20 +953,12 @@ if ! validate_bool_string "$enable_fingerprint"; then
     error "Invalid fingerprint flag: $enable_fingerprint"
 fi
 
-if ! validate_bool_string "$enable_bcompare5"; then
-    error "Invalid Beyond Compare flag: $enable_bcompare5"
-fi
-
 if ! validate_bool_string "$enable_vesktop"; then
     error "Invalid Vesktop flag: $enable_vesktop"
 fi
 
 if ! validate_bool_string "$enable_cava"; then
     error "Invalid CAVA flag: $enable_cava"
-fi
-
-if ! validate_bool_string "$enable_gemini_cli"; then
-    error "Invalid Gemini CLI flag: $enable_gemini_cli"
 fi
 
 if ! validate_bool_string "$enable_codex"; then
@@ -993,14 +975,6 @@ fi
 
 if ! validate_bool_string "$enable_thunderbird"; then
     error "Invalid Thunderbird flag: $enable_thunderbird"
-fi
-
-if ! validate_bool_string "$enable_obs_studio"; then
-    error "Invalid OBS Studio flag: $enable_obs_studio"
-fi
-
-if ! validate_bool_string "$enable_davinci_resolve"; then
-    error "Invalid DaVinci Resolve flag: $enable_davinci_resolve"
 fi
 
 if ! validate_bool_string "$enable_zotero"; then
@@ -1021,10 +995,6 @@ fi
 
 if ! validate_bool_string "$enable_texlive_full"; then
     error "Invalid TeX Live flag: $enable_texlive_full"
-fi
-
-if ! validate_bool_string "$enable_global_protect"; then
-    error "Invalid GlobalProtect flag: $enable_global_protect"
 fi
 
 if ! validate_bool_string "$enable_virtualization"; then
@@ -1081,22 +1051,17 @@ let
   gitEmail = "$(escape_nix_string "$git_email")";
   packageProfile = "$(escape_nix_string "$package_profile")";
   enableLocalFonts = $(render_nix_bool "$enable_custom_fonts");
-  enableBcompare5 = $(render_nix_bool "$enable_bcompare5");
   enableVesktop = $(render_nix_bool "$enable_vesktop");
   enableCava = $(render_nix_bool "$enable_cava");
-  enableGeminiCli = $(render_nix_bool "$enable_gemini_cli");
   enableCodex = $(render_nix_bool "$enable_codex");
   enableClaudeCode = $(render_nix_bool "$enable_claude_code");
   enableGoogleChrome = $(render_nix_bool "$enable_google_chrome");
   enableThunderbird = $(render_nix_bool "$enable_thunderbird");
-  enableObsStudio = $(render_nix_bool "$enable_obs_studio");
-  enableDavinciResolve = $(render_nix_bool "$enable_davinci_resolve");
   enableZotero = $(render_nix_bool "$enable_zotero");
   enablePodmanDesktop = $(render_nix_bool "$enable_podman_desktop");
   enableDistrobox = $(render_nix_bool "$enable_distrobox");
   enableDistroshelf = $(render_nix_bool "$enable_distroshelf");
   enableTexliveFull = $(render_nix_bool "$enable_texlive_full");
-  enableGlobalProtect = $(render_nix_bool "$enable_global_protect");
   enableVirtualization = $(render_nix_bool "$enable_virtualization");
   enableVirtManager = $(render_nix_bool "$enable_virt_manager");
   enableOllama = $(render_nix_bool "$enable_ollama");
@@ -1116,7 +1081,7 @@ let
   niriOutputsFile = "\${home}/.config/niri/outputs.local.kdl";
 in
 {
-  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableLocalFonts enableBcompare5 enableVesktop enableCava enableGeminiCli enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableObsStudio enableDavinciResolve enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableGlobalProtect enableVirtualization enableVirtManager enableOllama enableSteam browser gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile niriBrowserScript niriOutputsFile;
+  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableLocalFonts enableVesktop enableCava enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableVirtualization enableVirtManager enableOllama enableSteam browser gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile niriBrowserScript niriOutputsFile;
 }
 EOF
 

@@ -35,24 +35,16 @@
 
     nixos-grub-themes.url = "github:jeslie0/nixos-grub-themes";
 
-    bcompare5 = {
-      url = "github:W4T4r/nix-bcompare5";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-
     nix-hazkey = {
       url = "github:aster-void/nix-hazkey";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
-    globalprotect-openconnect.url = "github:yuezk/GlobalProtect-openconnect";
   };
 
   outputs = inputs @ {
     self,
     nixpkgs,
     home-manager,
-    bcompare5,
     ...
   }: let
     nixLib = nixpkgs.lib;
@@ -101,7 +93,6 @@
         modules =
           [
             ./home-manager/home.nix
-            bcompare5.homeManagerModules.default
           ]
           ++ extraModules;
       };
@@ -214,7 +205,6 @@
       programs = ./home-manager/modules/programs.nix;
       services = ./home-manager/modules/services.nix;
       fonts = ./home-manager/modules/fonts.nix;
-      bcompare5 = bcompare5.homeManagerModules.default;
     };
 
     nixosConfigurations = {

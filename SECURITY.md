@@ -20,5 +20,6 @@ Report it privately to the repository owner first. Include:
 This repository is intended to keep secrets and machine-specific private state out of Git.
 
 - Do not commit credentials, tokens, private keys, or personal machine secrets.
-- Keep `local/flake.nix`, `local/generated/`, `local/home-manager/`, and `local/nixos/` untracked.
+- Keep `local/flake.nix`, `local/flake.lock`, `local/generated/`, `local/home-manager/`, and `local/nixos/` untracked.
+- Keep linked local runtime files such as `home-manager/config/gtk-3.0/bookmarks` and `home-manager/config/niri/outputs.local.kdl` untracked.
 - Keep generated machine-local runtime files untracked unless they are explicitly sanitized and intended for sharing.

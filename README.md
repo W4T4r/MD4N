@@ -95,14 +95,15 @@ nix flake check path:./local
 
 During setup, MD4N can run in guided mode or automatic mode.
 
-- Guided mode asks for identity, locale, time zone, hostname, package profile, virtualization, GPU vendor, browser choice, fingerprint support, dual-boot support, hibernate support, and profile-specific package choices.
+- Guided mode asks for identity, locale, time zone, hostname, package profile, virtualization, GPU vendor, browser choice, fingerprint support, dual-boot support, hibernate support, the AI tools bundle, the TeX and Zotero bundle, and profile-specific package choices.
 - Automatic mode keeps the main machine-detection path and only asks for the choices that still need operator input.
 - The selected package profile drives both NixOS and Home Manager behavior.
+- Local-only packages and inputs such as Beyond Compare 5, OBS Studio, DaVinci Resolve, and GlobalProtect OpenConnect stay in `local/` modules and `local/flake.nix` instead of the shared root flake.
 
 Current profiles:
 
 - `minimal`: lighter baseline with virtualization disabled
-- `full`: default workstation profile
+- `full`: default workstation profile with Chrome, Thunderbird, and virtualization desktop helpers enabled by default
 
 ## Updating Your Fork
 
