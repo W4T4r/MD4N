@@ -18,10 +18,4 @@
       then pkgs.ollama-rocm
       else pkgs.ollama;
   };
-
-  programs.steam = {
-    enable = user.enableSteam or false;
-    remotePlay.openFirewall = true;
-    dedicatedServer.openFirewall = true;
-  };
 }

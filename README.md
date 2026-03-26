@@ -33,7 +33,7 @@ This top-level README is the operator guide: how to install it, regenerate machi
 - Machine-local answers are generated into `local/generated/user.nix` by [scripts/configure-local.sh](scripts/configure-local.sh).
 - The active machine entrypoint can live in `local/flake.nix`, which wraps the shared root flake and can add private inputs.
 - Local Home Manager and NixOS overrides belong under `local/home-manager/` and `local/nixos/`.
-- `local/templates/` contains starter files that can be copied into the ignored local tree.
+- `local_templates/` contains the tracked starter files and documentation for the ignored local tree.
 - Generated local state should be regenerated through the scripts, not hand-edited.
 - `direnv` users can run `direnv allow` in the repository root to load the local validation toolchain automatically.
 
@@ -134,7 +134,7 @@ Use these documents when you want the detailed explanation for each area:
 - [Home Manager Overview](home-manager/README.md): user-level structure and how files are linked into the home directory
 - [Home Manager Modules](home-manager/modules/README.md): core, programs, services, fonts, and package layering
 - [Home Manager Package Profiles](home-manager/modules/packages/README.md): the role of `minimal` and `full`
-- [Local Overrides](local/README.md): what belongs under the repository-local state directory
+- [Local Templates](local_templates/README.md): tracked starter files and documentation for the ignored local runtime tree
 - [Shared Config Tree](home-manager/config/README.md): what belongs under the repository-managed config tree
 - [Fcitx5](home-manager/config/fcitx5/README.md): Japanese and Chinese input layout and shared profile
 - [Desktop Entry Overrides](home-manager/applications/README.md): how `.desktop` overrides are organized
@@ -148,7 +148,7 @@ Use these documents when you want the detailed explanation for each area:
 ## Important Files
 
 - [flake.nix](flake.nix): shared base flake, exported modules, and builder functions
-- [local/README.md](local/README.md): local entrypoint layout, templates, and ignored paths
+- [local_templates/README.md](local_templates/README.md): local runtime layout, starter files, and ignored paths
 - [user.nix](user.nix): repository-safe shared defaults
 - [lib/user.nix](lib/user.nix): merge and normalization layer for user settings
 - [nixos/configuration.nix](nixos/configuration.nix): stable NixOS entrypoint

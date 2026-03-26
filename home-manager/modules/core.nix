@@ -37,7 +37,7 @@ in {
     mimeApps = {
       enable = true;
       defaultApplications = {
-        "text/markdown" = ["typora.desktop"];
+        "text/markdown" = ["neovim.desktop"];
         "text/plain" = ["neovim.desktop"];
         "text/x-python" = ["neovim.desktop"];
         "text/x-shellscript" = ["neovim.desktop"];
@@ -74,7 +74,6 @@ in {
     dataFile = {
       "applications/code.desktop".source = ../applications/code.desktop;
       "applications/neovim.desktop".source = ../applications/neovim.desktop;
-      "applications/typora.desktop".source = ../applications/typora.desktop;
     };
   };
 
@@ -91,7 +90,7 @@ in {
     enable = true;
     type = "fcitx5";
     fcitx5.addons = with pkgs; [
-      fcitx5-chinese-addons
+      qt6Packages.fcitx5-chinese-addons
       fcitx5-mozc-ut
       fcitx5-gtk
     ];

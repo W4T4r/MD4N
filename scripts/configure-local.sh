@@ -71,7 +71,7 @@ LOCAL_DIR="${ROOT_DIR}/local"
 LOCAL_GENERATED_DIR="${LOCAL_DIR}/generated"
 LOCAL_HOME_MANAGER_DIR="${LOCAL_DIR}/home-manager"
 LOCAL_NIXOS_DIR="${LOCAL_DIR}/nixos"
-LOCAL_TEMPLATE_DIR="${LOCAL_DIR}/templates"
+LOCAL_TEMPLATE_DIR="${ROOT_DIR}/local_templates"
 LOCAL_FLAKE_FILE="${LOCAL_DIR}/flake.nix"
 USER_NIX="${ROOT_DIR}/user.nix"
 USER_LOCAL_NIX="${LOCAL_GENERATED_DIR}/user.nix"
@@ -392,7 +392,7 @@ print_detected_user_info_defaults() {
     detail "  - Niri display/output setup"
     detail "Other defaults used with the full profile:"
     detail "  - Local fonts module [enabled]"
-    detail "  - Vesktop, CAVA, Chrome, Thunderbird, Podman Desktop, virt-manager, Steam"
+    detail "  - Vesktop, CAVA, Chrome, Thunderbird, Podman Desktop, virt-manager"
     detail "  - AI tools bundle [enabled]: Codex, Claude Code, Ollama"
     detail "  - Writing/research bundle [enabled]: TeX Live Full, Zotero"
     detail "  - Container tools bundle [enabled]: Distrobox, Distroshelf"
@@ -413,6 +413,20 @@ copy_template_if_missing() {
     fi
 }
 
+confirm_local_scaffold_update() {
+    local target=$1
+    local reason=$2
+    local answer=""
+
+    if ! is_interactive; then
+        return 0
+    fi
+
+    warn "${reason}"
+    read -r -p "Overwrite ${target}? [y/N] " answer
+    [[ "$answer" =~ ^[yY]$ ]]
+}
+
 sync_local_flake() {
     local escaped_root=""
     local temp_file=""
@@ -428,7 +442,12 @@ sync_local_flake() {
         return 0
     fi
 
-    if grep -Eq 'inputs\.bcompare5\.homeManagerModules\.default|bcompare5 =|globalprotect-openconnect' "$LOCAL_FLAKE_FILE"; then
+    if grep -Eq 'inputs\.bcompare5\.homeManagerModules\.default|bcompare5 =|globalprotect-openconnect' "$LOCAL_FLAKE_FILE" \
+        && ! grep -Eq 'extraHomeModulesPath|extraNixosModulesPath' "$LOCAL_FLAKE_FILE"; then
+        if ! confirm_local_scaffold_update "$LOCAL_FLAKE_FILE" "Existing local flake scaffold looks outdated and would be refreshed."; then
+            detail "Skipped local flake scaffold refresh: ${LOCAL_FLAKE_FILE}"
+            return 0
+        fi
         sed "s|__MD4N_ROOT__|${escaped_root}|g" "${LOCAL_TEMPLATE_DIR}/flake.nix" > "$LOCAL_FLAKE_FILE"
         detail "Refreshed legacy local flake scaffold: ${LOCAL_FLAKE_FILE}"
         return 0
@@ -441,8 +460,13 @@ sync_local_flake() {
         "$LOCAL_FLAKE_FILE" > "$temp_file"
 
     if ! cmp -s "$LOCAL_FLAKE_FILE" "$temp_file"; then
-        mv "$temp_file" "$LOCAL_FLAKE_FILE"
-        detail "Updated local flake root input: ${LOCAL_FLAKE_FILE}"
+        if confirm_local_scaffold_update "$LOCAL_FLAKE_FILE" "The local flake root path would be updated to the current repository location."; then
+            mv "$temp_file" "$LOCAL_FLAKE_FILE"
+            detail "Updated local flake root input: ${LOCAL_FLAKE_FILE}"
+        else
+            rm -f "$temp_file"
+            detail "Skipped local flake update: ${LOCAL_FLAKE_FILE}"
+        fi
     else
         rm -f "$temp_file"
     fi
@@ -462,8 +486,12 @@ sync_local_hardware_stub() {
     fi
 
     if grep -Eq '__MD4N_ROOT__|hardware-configuration\.nix' "$target"; then
-        cp "$template" "$target"
-        detail "Updated local hardware fallback import: ${target}"
+        if confirm_local_scaffold_update "$target" "The local hardware fallback import would be refreshed from the current scaffold."; then
+            cp "$template" "$target"
+            detail "Updated local hardware fallback import: ${target}"
+        else
+            detail "Skipped local hardware scaffold update: ${target}"
+        fi
     fi
 }
 
@@ -472,11 +500,15 @@ ensure_local_scaffold() {
 
     sync_local_flake
     copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/home-manager/default.nix" "${LOCAL_HOME_MANAGER_DIR}/default.nix"
+    copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/home-manager/extra-modules.nix" "${LOCAL_HOME_MANAGER_DIR}/extra-modules.nix"
     copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/home-manager/packages.nix" "${LOCAL_HOME_MANAGER_DIR}/packages.nix"
     copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/home-manager/programs.nix" "${LOCAL_HOME_MANAGER_DIR}/programs.nix"
+    copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/home-manager/services.nix" "${LOCAL_HOME_MANAGER_DIR}/services.nix"
     copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/home-manager/fonts.nix" "${LOCAL_HOME_MANAGER_DIR}/fonts.nix"
     copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/nixos/default.nix" "${LOCAL_NIXOS_DIR}/default.nix"
+    copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/nixos/extra-modules.nix" "${LOCAL_NIXOS_DIR}/extra-modules.nix"
     copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/nixos/packages.nix" "${LOCAL_NIXOS_DIR}/packages.nix"
+    copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/nixos/services.nix" "${LOCAL_NIXOS_DIR}/services.nix"
     copy_template_if_missing "${LOCAL_TEMPLATE_DIR}/nixos/swap.nix" "${LOCAL_NIXOS_DIR}/swap.nix"
     sync_local_hardware_stub
 }
@@ -812,8 +844,6 @@ if is_interactive; then
     enable_distrobox="true"
     enable_distroshelf="true"
     enable_virt_manager="true"
-    enable_steam="true"
-
     if [[ "$package_profile" == "full" ]]; then
         if [[ "$enable_virtualization" == "true" ]]; then
             prompt_optional_full_packages
@@ -832,7 +862,6 @@ if is_interactive; then
         enable_distroshelf="false"
         enable_virtualization="false"
         enable_virt_manager="false"
-        enable_steam="false"
     elif [[ "$enable_virtualization" != "true" ]]; then
         enable_podman_desktop="false"
         enable_distrobox="false"
@@ -908,7 +937,6 @@ if is_interactive; then
     detail "Shelf    : ${enable_distroshelf}"
     detail "Virtual  : ${enable_virtualization}"
     detail "Virt Mgr : ${enable_virt_manager}"
-    detail "Steam    : ${enable_steam}"
     detail "Browser  : ${browser_choice}"
     detail "GPU      : ${gpu_vendor}"
     detail "Fingerprint: ${enable_fingerprint}"
@@ -937,7 +965,6 @@ else
     enable_distroshelf="true"
     enable_virtualization="true"
     enable_virt_manager="true"
-    enable_steam="true"
     browser_choice=$DEFAULT_BROWSER
     gpu_vendor=$(normalize_gpu_vendor "$DEFAULT_GPU_VENDOR")
     enable_fingerprint="false"
@@ -956,7 +983,6 @@ else
         enable_distrobox="false"
         enable_distroshelf="false"
         enable_virt_manager="false"
-        enable_steam="false"
     fi
 
     if is_interactive; then
@@ -1036,10 +1062,6 @@ if ! validate_bool_string "$enable_ollama"; then
     error "Invalid Ollama flag: $enable_ollama"
 fi
 
-if ! validate_bool_string "$enable_steam"; then
-    error "Invalid Steam flag: $enable_steam"
-fi
-
 if ! validate_bool_string "$enable_dual_boot"; then
     error "Invalid dual-boot flag: $enable_dual_boot"
 fi
@@ -1092,7 +1114,6 @@ let
   enableVirtualization = $(render_nix_bool "$enable_virtualization");
   enableVirtManager = $(render_nix_bool "$enable_virt_manager");
   enableOllama = $(render_nix_bool "$enable_ollama");
-  enableSteam = $(render_nix_bool "$enable_steam");
   browser = "$(escape_nix_string "$browser_choice")";
   gpuVendor = "$(escape_nix_string "$gpu_vendor")";
   enableFingerprint = $(render_nix_bool "$enable_fingerprint");
@@ -1108,7 +1129,7 @@ let
   niriOutputsFile = "\${home}/.config/niri/outputs.local.kdl";
 in
 {
-  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableLocalFonts enableVesktop enableCava enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableVirtualization enableVirtManager enableOllama enableSteam browser gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile niriBrowserScript niriOutputsFile;
+  inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableLocalFonts enableVesktop enableCava enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableVirtualization enableVirtManager enableOllama browser gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile niriBrowserScript niriOutputsFile;
 }
 EOF
 

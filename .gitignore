@@ -5,11 +5,7 @@ font.local.nix
 font.local.nix.bak
 
 # Local machine state and generated local overrides
-local/flake.nix
-local/flake.lock
-local/generated/
-local/home-manager/
-local/nixos/
+local/
 
 # Linked config trees that intentionally keep local files beside shared config
 home-manager/config/gtk-3.0/bookmarks
