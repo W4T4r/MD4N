@@ -175,11 +175,12 @@ choose_target() {
 update_flake_dir() {
     local flake_dir=$1
     local label=$2
+    local flake_ref="path:${flake_dir}"
     require_command nix
 
     info "Updating ${label} flake.lock..."
-    detail "Command: nix flake update --flake ${flake_dir}"
-    nix flake update --flake "${flake_dir}"
+    detail "Command: nix flake update --flake ${flake_ref}"
+    nix flake update --flake "${flake_ref}"
 }
 
 require_local_flake() {
