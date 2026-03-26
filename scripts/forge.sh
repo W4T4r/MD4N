@@ -328,7 +328,6 @@ done
 
 [[ -f "${ROOT_DIR}/flake.nix" ]] || error "Could not find flake.nix in ${ROOT_DIR}"
 [[ -f "$ACTIVE_USER_NIX" ]] || error "Could not find user.nix or local/generated/user.nix in ${ROOT_DIR}. Run setup first."
-require_command fzf
 
 USERNAME=$(detect_user_field "$ACTIVE_USER_NIX" "name")
 HOSTNAME=$(detect_user_field "$ACTIVE_USER_NIX" "hostname")
@@ -336,6 +335,7 @@ HOSTNAME=$(detect_user_field "$ACTIVE_USER_NIX" "hostname")
 [[ -n "$HOSTNAME" ]] || error "Could not determine hostname from ${ACTIVE_USER_NIX}"
 
 if [[ -z "$target_mode" ]]; then
+    require_command fzf
     choose_target
     target_mode="$MENU_SELECTION"
     case "$target_mode" in
