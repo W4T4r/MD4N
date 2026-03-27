@@ -34,6 +34,7 @@ This top-level README is the operator guide: how to install it, regenerate machi
 - The active machine entrypoint can live in `local/flake.nix`, which wraps the shared root flake and can add private inputs.
 - Local Home Manager and NixOS overrides belong under `local/home-manager/` and `local/nixos/`.
 - `local_templates/` contains the tracked starter files and documentation for the ignored local tree.
+- `private_templates/MD4N-private/` contains a tracked starter for a separate private local-config repository.
 - Generated local state should be regenerated through the scripts, not hand-edited.
 - `direnv` users can run `direnv allow` in the repository root to load the local validation toolchain automatically.
 
@@ -121,6 +122,9 @@ For local configuration that you want to maintain yourself over time, the recomm
 2. Link the runtime path to that private repository.
 3. Let the shared MD4N repository manage only the reusable base and the generated machine state.
 
+The tracked starter for that private repository lives in [private_templates/MD4N-private](private_templates/MD4N-private/README.md).
+The recommended management workflow is documented in [docs/private-repo.md](docs/private-repo.md).
+
 This works especially well for app-managed config that is easier to edit in place, such as linked trees under `~/.config`.
 Examples include local shell snippets, window-manager runtime files, and application configs that are usually edited from inside the app itself.
 
@@ -134,6 +138,8 @@ Use these documents when you want the detailed explanation for each area:
 - [Home Manager Modules](home-manager/modules/README.md): core, programs, services, fonts, and package layering
 - [Home Manager Package Profiles](home-manager/modules/packages/README.md): the role of `minimal` and `full`
 - [Local Templates](local_templates/README.md): tracked starter files and documentation for the ignored local runtime tree
+- [Private Repo Guide](docs/private-repo.md): when to use a separate private repo and how to manage it
+- [Private Repo Template](private_templates/README.md): tracked starter content for separate private repositories
 - [Shared Config Tree](home-manager/config/README.md): what belongs under the repository-managed config tree
 - [Fcitx5](home-manager/config/fcitx5/README.md): Japanese and Chinese input layout and shared profile
 - [Desktop Entry Overrides](home-manager/applications/README.md): how `.desktop` overrides are organized
@@ -148,6 +154,7 @@ Use these documents when you want the detailed explanation for each area:
 
 - [flake.nix](flake.nix): shared base flake, exported modules, and builder functions
 - [local_templates/README.md](local_templates/README.md): local runtime layout, starter files, and ignored paths
+- [private_templates/MD4N-private/README.md](private_templates/MD4N-private/README.md): starter for a separate `MD4N-private` repository
 - [user.nix](user.nix): repository-safe shared defaults
 - [lib/user.nix](lib/user.nix): merge and normalization layer for user settings
 - [nixos/configuration.nix](nixos/configuration.nix): stable NixOS entrypoint

@@ -1,0 +1,444 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PRIVATE_ROOT="$SCRIPT_DIR"
+
+seed_path_if_missing() {
+    local source=$1
+    local target=$2
+
+    [[ -e "$source" ]] || return 0
+
+    if [[ -d "$source" ]]; then
+        mkdir -p "$target"
+        cp -anL "$source/." "$target/"
+    elif [[ ! -e "$target" ]]; then
+        mkdir -p "$(dirname "$target")"
+        cp -aL "$source" "$target"
+    fi
+}
+
+copy_path() {
+    local source=$1
+    local target=$2
+
+    [[ -e "$source" ]] || return 0
+
+    mkdir -p "$(dirname "$target")"
+    cp -aL --remove-destination "$source" "$target"
+}
+
+copy_tree_contents() {
+    local source=$1
+    local target=$2
+
+    [[ -d "$source" ]] || return 0
+
+    mkdir -p "$target"
+    cp -aL "$source/." "$target/"
+}
+
+ensure_file_if_missing() {
+    local target=$1
+    local content=$2
+
+    if [[ ! -e "$target" ]]; then
+        mkdir -p "$(dirname "$target")"
+        printf '%s\n' "$content" > "$target"
+    fi
+}
+
+resolve_md4n_root() {
+    if [[ -d "${PRIVATE_ROOT}/../MD4N/.git" ]]; then
+        printf '%s\n' "$(cd "${PRIVATE_ROOT}/../MD4N" && pwd)"
+        return 0
+    fi
+
+    if [[ -d "${HOME}/Documents/MD4N/.git" ]]; then
+        printf '%s\n' "${HOME}/Documents/MD4N"
+        return 0
+    fi
+
+    printf '%s\n' ""
+}
+
+read_user_value_from_md4n() {
+    local key=$1
+    local md4n_root user_nix
+
+    md4n_root=$(resolve_md4n_root)
+    [[ -n "$md4n_root" ]] || return 1
+
+    user_nix="${md4n_root}/local/generated/user.nix"
+    [[ -f "$user_nix" ]] || return 1
+
+    sed -nE "s/^[[:space:]]*${key}[[:space:]]*=[[:space:]]*\"([^\"]+)\";.*/\1/p" "$user_nix" | head -n 1
+}
+
+detect_full_name() {
+    local gecos
+    gecos=$(getent passwd "$(id -un)" | cut -d: -f5 | cut -d, -f1)
+    if [[ -n "$gecos" ]]; then
+        printf '%s\n' "$gecos"
+        return 0
+    fi
+    printf '%s\n' "$(id -un)"
+}
+
+detect_os() {
+    if [[ -r /etc/os-release ]]; then
+        . /etc/os-release
+        printf '%s\n' "${PRETTY_NAME:-${NAME:-unknown}}"
+        return 0
+    fi
+    printf '%s\n' 'unknown'
+}
+
+detect_cpu() {
+    local cpu
+    cpu=$(sed -n 's/^model name[[:space:]]*:[[:space:]]*//p' /proc/cpuinfo | head -n 1)
+    printf '%s\n' "${cpu:-unknown}"
+}
+
+detect_gpu_vendor() {
+    if command -v lspci >/dev/null 2>&1; then
+        if lspci | grep -Ei 'vga|3d|display' | grep -qi 'nvidia'; then
+            printf '%s\n' 'nvidia'
+            return 0
+        fi
+        if lspci | grep -Ei 'vga|3d|display' | grep -qi 'amd\|advanced micro devices\|ati'; then
+            printf '%s\n' 'amd'
+            return 0
+        fi
+        if lspci | grep -Ei 'vga|3d|display' | grep -qi 'intel'; then
+            printf '%s\n' 'intel'
+            return 0
+        fi
+    fi
+    printf '%s\n' 'unknown'
+}
+
+detect_timezone() {
+    if command -v timedatectl >/dev/null 2>&1; then
+        local tz
+        tz=$(timedatectl show -p Timezone --value 2>/dev/null || true)
+        if [[ -n "$tz" ]]; then
+            printf '%s\n' "$tz"
+            return 0
+        fi
+    fi
+
+    if [[ -r /etc/timezone ]]; then
+        sed -n '1p' /etc/timezone
+        return 0
+    fi
+
+    printf '%s\n' 'unknown'
+}
+
+usage() {
+    cat <<'EOF_USAGE'
+Usage: bash ./new-machine.sh [machine-dir] [--force]
+
+Creates a machine directory with:
+- README.md
+- local/
+- home-manager/
+EOF_USAGE
+}
+
+render_niri_browser_script() {
+    local browser=$1
+
+    if [[ "$browser" == "chrome" ]]; then
+        cat <<'EOF'
+#!/usr/bin/env fish
+google-chrome-stable --profile-directory="Default" &
+EOF
+    else
+        cat <<'EOF'
+#!/usr/bin/env fish
+firefox &
+EOF
+    fi
+}
+
+write_private_home_manager_readme() {
+    local target=$1
+
+    if [[ -e "$target" ]]; then
+        return 0
+    fi
+
+    mkdir -p "$(dirname "$target")"
+    cat > "$target" <<'EOF'
+# runtime
+
+This directory stores private runtime config that is easier to maintain as real files and link into place.
+
+Typical examples:
+
+- `btop` config edited inside the application
+- private Niri helper scripts, `outputs.kdl`, `config.local.kdl`, and optional `local/*.local.kdl`
+- local Fish environment, aliases, and functions
+EOF
+}
+
+write_niri_config_local() {
+    local target=$1
+
+    if [[ -e "$target" ]]; then
+        return 0
+    fi
+
+    mkdir -p "$(dirname "$target")"
+    cat > "$target" <<'EOF'
+// Machine-local Niri overrides loaded last by config.kdl.
+// Use this file to override the shared config without editing tracked KDL files.
+// You can also split local-only snippets into local/*.local.kdl and include them here.
+//
+// Example:
+// include "local/laptop.local.kdl"
+EOF
+}
+
+write_niri_outputs_stub() {
+    local target=$1
+
+    if [[ -e "$target" ]]; then
+        return 0
+    fi
+
+    mkdir -p "$(dirname "$target")"
+    cat > "$target" <<'EOF'
+// Output configuration.
+// Auto-generated by scripts/configure-niri-outputs.sh
+// Re-run that script after linking this machine profile.
+// Find more information on the wiki:
+// https://yalter.github.io/niri/Configuration:-Outputs
+EOF
+}
+
+write_browser_script_if_missing() {
+    local target=$1
+    local browser=$2
+
+    if [[ -e "$target" ]]; then
+        return 0
+    fi
+
+    mkdir -p "$(dirname "$target")"
+    render_niri_browser_script "$browser" > "$target"
+    chmod +x "$target"
+}
+
+write_custom_font_placeholders() {
+    local hm_target=$1
+
+    if [[ ! -e "${hm_target}/custom-fonts/gtk-3.0-settings.ini" ]]; then
+        mkdir -p "${hm_target}/custom-fonts"
+        cat > "${hm_target}/custom-fonts/gtk-3.0-settings.ini" <<'EOF'
+# Leave this commented out to use the system default GTK 3 font.
+[Settings]
+# gtk-font-name=Sans 11
+EOF
+    fi
+
+    if [[ ! -e "${hm_target}/custom-fonts/gtk-4.0-settings.ini" ]]; then
+        mkdir -p "${hm_target}/custom-fonts"
+        cat > "${hm_target}/custom-fonts/gtk-4.0-settings.ini" <<'EOF'
+# Leave this commented out to use the system default GTK 4 font.
+[Settings]
+# gtk-font-name=Sans 11
+EOF
+    fi
+
+    if [[ ! -e "${hm_target}/custom-fonts/fcitx5-classicui.conf" ]]; then
+        mkdir -p "${hm_target}/custom-fonts"
+        cat > "${hm_target}/custom-fonts/fcitx5-classicui.conf" <<'EOF'
+# Leave these commented out to use the system default Fcitx5 fonts.
+# Font="Sans 10"
+# MenuFont="Sans 10"
+# TrayFont="Sans 10"
+EOF
+    fi
+}
+
+seed_local_tree() {
+    local md4n_root=$1
+    local target_dir=$2
+    local local_target="${target_dir}/local"
+
+    mkdir -p "${local_target}/generated" "${local_target}/home-manager" "${local_target}/nixos"
+
+    if [[ -n "$md4n_root" ]]; then
+        copy_tree_contents "${md4n_root}/local_templates" "${local_target}"
+
+        copy_path "${md4n_root}/local/README.md" "${local_target}/README.md"
+        copy_path "${md4n_root}/local/flake.nix" "${local_target}/flake.nix"
+        copy_path "${md4n_root}/local/flake.lock" "${local_target}/flake.lock"
+        copy_path "${md4n_root}/flake.lock" "${local_target}/flake.lock"
+        copy_path "${md4n_root}/local/generated/user.nix" "${local_target}/generated/user.nix"
+        copy_path "${md4n_root}/local/home-manager/default.nix" "${local_target}/home-manager/default.nix"
+        copy_path "${md4n_root}/local/home-manager/extra-modules.nix" "${local_target}/home-manager/extra-modules.nix"
+        copy_path "${md4n_root}/local/home-manager/fonts.nix" "${local_target}/home-manager/fonts.nix"
+        copy_path "${md4n_root}/local/home-manager/packages.nix" "${local_target}/home-manager/packages.nix"
+        copy_path "${md4n_root}/local/home-manager/programs.nix" "${local_target}/home-manager/programs.nix"
+        copy_path "${md4n_root}/local/home-manager/services.nix" "${local_target}/home-manager/services.nix"
+        copy_path "${md4n_root}/local/nixos/default.nix" "${local_target}/nixos/default.nix"
+        copy_path "${md4n_root}/local/nixos/extra-modules.nix" "${local_target}/nixos/extra-modules.nix"
+        copy_path "${md4n_root}/local/nixos/packages.nix" "${local_target}/nixos/packages.nix"
+        copy_path "${md4n_root}/local/nixos/services.nix" "${local_target}/nixos/services.nix"
+        copy_path "${md4n_root}/local/nixos/swap.nix" "${local_target}/nixos/swap.nix"
+    fi
+}
+
+seed_private_home_manager_tree() {
+    local md4n_root=$1
+    local target_dir=$2
+    local browser=$3
+    local hm_target="${target_dir}/home-manager"
+
+    mkdir -p \
+        "${hm_target}/btop/themes" \
+        "${hm_target}/custom-fonts" \
+        "${hm_target}/fish" \
+        "${hm_target}/niri/local"
+
+    if [[ -n "$md4n_root" ]]; then
+        seed_path_if_missing "${md4n_root}/home-manager/config/btop" "${hm_target}/btop"
+        seed_path_if_missing "${md4n_root}/home-manager/config/fish/local.env.fish" "${hm_target}/fish/local.env.fish"
+        seed_path_if_missing "${md4n_root}/home-manager/config/fish/local.aliases.fish" "${hm_target}/fish/local.aliases.fish"
+        seed_path_if_missing "${md4n_root}/home-manager/config/fish/local.functions.fish" "${hm_target}/fish/local.functions.fish"
+        seed_path_if_missing "${md4n_root}/home-manager/config/niri/browser.sh" "${hm_target}/niri/browser.sh"
+        seed_path_if_missing "${md4n_root}/home-manager/config/niri/outputs.kdl" "${hm_target}/niri/outputs.kdl"
+        seed_path_if_missing "${md4n_root}/home-manager/config/niri/outputs.local.kdl" "${hm_target}/niri/outputs.kdl"
+        seed_path_if_missing "${md4n_root}/home-manager/config/niri/config.local.kdl" "${hm_target}/niri/config.local.kdl"
+        seed_path_if_missing "${md4n_root}/home-manager/config/custom-fonts/gtk-3.0-settings.ini" "${hm_target}/custom-fonts/gtk-3.0-settings.ini"
+        seed_path_if_missing "${md4n_root}/home-manager/config/custom-fonts/gtk-4.0-settings.ini" "${hm_target}/custom-fonts/gtk-4.0-settings.ini"
+        seed_path_if_missing "${md4n_root}/home-manager/config/custom-fonts/fcitx5-classicui.conf" "${hm_target}/custom-fonts/fcitx5-classicui.conf"
+    fi
+
+    write_private_home_manager_readme "${hm_target}/README.md"
+    ensure_file_if_missing "${hm_target}/fish/local.env.fish" '# Local environment variables.'
+    ensure_file_if_missing "${hm_target}/fish/local.aliases.fish" '# Local aliases and abbreviations.'
+    ensure_file_if_missing "${hm_target}/fish/local.functions.fish" '# Local Fish functions.'
+    write_custom_font_placeholders "$hm_target"
+    write_niri_config_local "${hm_target}/niri/config.local.kdl"
+    write_niri_outputs_stub "${hm_target}/niri/outputs.kdl"
+    write_browser_script_if_missing "${hm_target}/niri/browser.sh" "$browser"
+}
+
+main() {
+    local machine_dir=""
+    local force=0
+    local target_dir target_readme
+    local hostname user full_name system_name os_name kernel_name cpu_name gpu_vendor locale_name timezone_name package_profile browser md4n_root
+
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --force)
+                force=1
+                shift
+                ;;
+            --help)
+                usage
+                exit 0
+                ;;
+            -*)
+                echo "[ERROR] Unknown option: $1" >&2
+                usage >&2
+                exit 1
+                ;;
+            *)
+                if [[ -n "$machine_dir" ]]; then
+                    echo "[ERROR] Machine directory already specified: ${machine_dir}" >&2
+                    exit 1
+                fi
+                machine_dir=$1
+                shift
+                ;;
+        esac
+    done
+
+    if [[ -z "$machine_dir" ]]; then
+        read -r -p 'Machine directory name: ' machine_dir
+    fi
+
+    [[ -n "$machine_dir" ]] || { echo '[ERROR] Machine directory name is required.' >&2; exit 1; }
+    [[ "$machine_dir" != .* ]] || { echo '[ERROR] Hidden directory names are not allowed.' >&2; exit 1; }
+    [[ "$machine_dir" != */* ]] || { echo '[ERROR] Use a single directory name, not a path.' >&2; exit 1; }
+
+    target_dir="${PRIVATE_ROOT}/${machine_dir}"
+    target_readme="${target_dir}/README.md"
+    md4n_root=$(resolve_md4n_root)
+
+    if [[ -e "$target_readme" && $force -ne 1 ]]; then
+        echo "[ERROR] ${target_readme} already exists. Use --force to overwrite it." >&2
+        exit 1
+    fi
+
+    mkdir -p "${target_dir}/local" "${target_dir}/home-manager/niri/local"
+
+    hostname=$(hostname)
+    user=$(id -un)
+    full_name=$(read_user_value_from_md4n fullname || detect_full_name)
+    system_name="$(uname -m)-linux"
+    os_name=$(detect_os)
+    kernel_name="$(uname -sr)"
+    cpu_name=$(detect_cpu)
+    gpu_vendor=$(read_user_value_from_md4n gpuVendor || detect_gpu_vendor)
+    locale_name=$(read_user_value_from_md4n locale || printf '%s\n' "${LANG:-unknown}")
+    timezone_name=$(read_user_value_from_md4n timezone || detect_timezone)
+    package_profile=$(read_user_value_from_md4n packageProfile || printf '%s\n' '<set me>')
+    browser=$(read_user_value_from_md4n browser || printf '%s\n' '<set me>')
+
+    cat > "$target_readme" <<EOF_MACHINE
+# ${machine_dir}
+
+Private settings for this machine profile.
+
+## Summary
+
+- Hostname: \
+\`${hostname}\`
+- User: \
+\`${user}\`
+- Full name: \
+\`${full_name}\`
+- System: \
+\`${system_name}\`
+- OS: \
+\`${os_name}\`
+- Kernel: \
+\`${kernel_name}\`
+- CPU: \
+\`${cpu_name}\`
+- GPU vendor: \
+\`${gpu_vendor}\`
+- Locale: \
+\`${locale_name}\`
+- Time zone: \
+\`${timezone_name}\`
+- Package profile: \
+\`${package_profile}\`
+- Browser launcher: \
+\`${browser}\`
+
+## Directory Map
+
+- \`local/\`
+  Full local flake tree for this machine profile.
+- \`home-manager/\`
+  Private Home Manager side files linked into MD4N runtime paths.
+EOF_MACHINE
+
+    seed_local_tree "$md4n_root" "$target_dir"
+    seed_private_home_manager_tree "$md4n_root" "$target_dir" "$browser"
+
+    echo "[SUCCESS] Created ${target_readme}"
+}
+
+main "$@"

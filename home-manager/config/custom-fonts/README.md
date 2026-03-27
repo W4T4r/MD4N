@@ -17,4 +17,6 @@ Recommended workflow:
 2. Link or copy them into this directory.
 3. Re-apply Home Manager when you want those overrides installed.
 
+The tracked starter lives in [`../../../private_templates/MD4N-private`](../../../private_templates/MD4N-private/README.md), and the management workflow is documented in [`../../../docs/private-repo.md`](../../../docs/private-repo.md).
+
 These files are local because they usually depend on fonts, themes, and UI preferences that are not safe to assume across machines.

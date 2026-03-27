@@ -18,6 +18,7 @@ This linked tree also allows a few machine-local files to live beside the shared
 
 Edit the tracked KDL files in this directory when the change should be shared.
 If you use `MD4N-private`, keep these local-only Niri files under `<machine>/home-manager/niri/` there and apply them with `bash ../MD4N-private/link-md4n.sh`.
+The tracked starter lives in [`../../../private_templates/MD4N-private`](../../../private_templates/MD4N-private/README.md), and the full workflow is documented in [`../../../docs/private-repo.md`](../../../docs/private-repo.md).
 Use `config.local.kdl` for machine-local overrides that should win over the shared config.
 If the local overrides grow, move them into `local/*.local.kdl` and include them from `config.local.kdl`.
 Re-run the scripts above when you want to refresh the generated machine-local files instead of editing them by hand.
