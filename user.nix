@@ -43,7 +43,7 @@ let
   faceFile = "";
   browser = "firefox";
   niriBrowserScript = "${home}/.config/niri/browser.sh";
-  niriOutputsFile = "${home}/.config/niri/outputs.local.kdl";
+  niriOutputsFile = "${home}/.config/niri/outputs.kdl";
 in {
   inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableLocalFonts enableVesktop enableCava enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableVirtualization enableVirtManager enableOllama gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile browser niriBrowserScript niriOutputsFile;
 }

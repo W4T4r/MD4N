@@ -5,7 +5,7 @@
 
 // Split by the wiki's Configuration sections.
 include "input.kdl"
-include "outputs.local.kdl"
+include "outputs.kdl"
 include "key-bindings.kdl"
 include "layout.kdl"
 include "miscellaneous.kdl"
@@ -13,3 +13,7 @@ include "window-rules.kdl"
 include "layer-rules.kdl"
 include "animations.kdl"
 include "debug-options.kdl"
+
+// Load machine-local overrides last so they can override the shared config above.
+// Keep small overrides in config.local.kdl, or split them into local/*.local.kdl.
+include "config.local.kdl"

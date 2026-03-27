@@ -18,7 +18,8 @@ Generated machine-local files should not be committed here just because they eve
 
 Examples of files that stay outside the repo, or inside an explicitly reserved local slot:
 
-- Display-topology-specific Niri output definitions generated as `outputs.local.kdl`
+- Display-topology-specific Niri output definitions generated as `outputs.kdl`
+- Niri machine-local overrides kept in `config.local.kdl` or split into `local/*.local.kdl`
 - Machine-local browser launch helpers
 - Personal GTK or input-method font overrides
 - Personal secrets or tokens
@@ -28,4 +29,4 @@ Examples of files that stay outside the repo, or inside an explicitly reserved l
 
 Add config here when it should be reproducible across machines.
 If a file depends on one machine's monitor layout, personal font set, or secret data, treat it as generated local state instead.
-The main exceptions are small reserved local slots such as Niri's `outputs.local.kdl` or `custom-fonts/`, where the runtime file benefits from staying beside the linked shared config.
+The main exceptions are small reserved local slots such as Niri's `outputs.kdl`, `config.local.kdl`, `local/`, or `custom-fonts/`, where the runtime file benefits from staying beside the linked shared config.

@@ -697,6 +697,31 @@ write_niri_browser_script() {
     success "Created ${browser_script_file}"
 }
 
+ensure_niri_local_config() {
+    local username=$1
+    local niri_dir="/home/${username}/.config/niri"
+    local local_config_file="${niri_dir}/config.local.kdl"
+    local local_snippets_dir="${niri_dir}/local"
+
+    mkdir -p "$local_snippets_dir"
+
+    if [[ -e "$local_config_file" ]]; then
+        detail "Keeping existing ${local_config_file}"
+        return 0
+    fi
+
+    info "Generating ${local_config_file}..."
+    cat > "$local_config_file" <<'EOF'
+// Machine-local Niri overrides loaded last by config.kdl.
+// Use this file to override the shared config without editing tracked KDL files.
+// You can also split local-only snippets into local/*.local.kdl and include them here.
+//
+// Example:
+// include "local/laptop.local.kdl"
+EOF
+    success "Created ${local_config_file}"
+}
+
 print_banner
 info "Preparing MD4N local configuration..."
 
@@ -1126,7 +1151,7 @@ let
   app = "\${homemanager}/applications";
   faceFile = "";
   niriBrowserScript = "\${home}/.config/niri/browser.sh";
-  niriOutputsFile = "\${home}/.config/niri/outputs.local.kdl";
+  niriOutputsFile = "\${home}/.config/niri/outputs.kdl";
 in
 {
   inherit name fullname locale timezone hostname gitName gitEmail packageProfile enableLocalFonts enableVesktop enableCava enableCodex enableClaudeCode enableGoogleChrome enableThunderbird enableZotero enablePodmanDesktop enableDistrobox enableDistroshelf enableTexliveFull enableVirtualization enableVirtManager enableOllama browser gpuVendor enableFingerprint enableDualBoot enableHibernate home dotroot homemanager cfg app faceFile niriBrowserScript niriOutputsFile;
@@ -1137,6 +1162,7 @@ success "Created ${USER_LOCAL_NIX}"
 
 write_fish_env_script "$dotroot"
 write_niri_browser_script "$username" "$browser_choice"
+ensure_niri_local_config "$username"
 [[ -f "$CONFIGURE_NIRI_OUTPUTS_SCRIPT" ]] || error "Could not find configure-niri-outputs.sh at ${CONFIGURE_NIRI_OUTPUTS_SCRIPT}"
 info "Running: bash ${CONFIGURE_NIRI_OUTPUTS_SCRIPT} --user ${username}"
 bash "$CONFIGURE_NIRI_OUTPUTS_SCRIPT" --user "$username"

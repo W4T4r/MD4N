@@ -14,6 +14,7 @@ in {
       cliphist
       wl-clipboard
       brightnessctl
+      bubblewrap
       wlsunset
       wdisplays
       hyprpicker

@@ -89,7 +89,7 @@ What to do:
 Symptoms:
 
 - no connected outputs are detected
-- the generated `outputs.local.kdl` is not updated
+- the generated `outputs.kdl` is not updated
 
 What to know:
 

@@ -444,7 +444,7 @@ md4n_display_apply_output_config() {
 
 md4n_display_configure_outputs() {
     local username=$1
-    local output_file=${2:-"/home/${username}/.config/niri/outputs.local.kdl"}
+    local output_file=${2:-"/home/${username}/.config/niri/outputs.kdl"}
     local assume_yes=${3:-false}
     local -a outputs=()
     local -a mode_list=()

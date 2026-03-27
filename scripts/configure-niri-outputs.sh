@@ -10,10 +10,10 @@ usage() {
     cat <<'EOF'
 Usage: bash scripts/configure-niri-outputs.sh [--user USERNAME] [--output-file PATH] [--yes]
 
-Detect connected DRM outputs and update ~/.config/niri/outputs.local.kdl.
+Detect connected DRM outputs and update ~/.config/niri/outputs.kdl.
 
 Behavior:
-- If the selected display is not present in outputs.local.kdl, append a new output block.
+- If the selected display is not present in outputs.kdl, append a new output block.
 - If the selected display already exists, show a diff and ask before replacing it.
 EOF
 }
@@ -60,7 +60,7 @@ main() {
     done
 
     if [[ -z "$output_file" ]]; then
-        output_file="/home/${username}/.config/niri/outputs.local.kdl"
+        output_file="/home/${username}/.config/niri/outputs.kdl"
     fi
 
     md4n_display_configure_outputs "$username" "$output_file" "$assume_yes"
