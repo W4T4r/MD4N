@@ -51,6 +51,7 @@ Treat `MD4N-private` as the source of truth for hand-maintained local files.
 
 - Edit shared logic in `MD4N/`.
 - Edit private runtime files in `MD4N-private/<machine>/home-manager/`.
+- Run the normal day-to-day menu from `MD4N/` with `bash ./scripts/mn.sh`.
 - Re-run `bash ./link-md4n.sh --machine <machine-dir>` when you want to re-apply the private tree to `MD4N/`.
 
 Important direction rules:
@@ -58,6 +59,7 @@ Important direction rules:
 - `link-md4n.sh` syncs `MD4N-private/<machine>/local/` into `MD4N/local/`.
 - `link-md4n.sh` links `MD4N-private/<machine>/home-manager/` files into `MD4N/home-manager/config/`.
 - After linking, editing a linked runtime file through the `MD4N/home-manager/config/...` path edits the private file because that path is a symlink.
+- After linking, `bash ./scripts/mn.sh` in `MD4N/` keeps working as the main entrypoint, and its `local`, `display`, and `forge` actions operate on the linked private-managed files.
 
 ## Generated Files
 

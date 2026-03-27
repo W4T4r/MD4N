@@ -124,6 +124,7 @@ For local configuration that you want to maintain yourself over time, the recomm
 
 The tracked starter for that private repository lives in [private_templates/MD4N-private](private_templates/MD4N-private/README.md).
 The recommended management workflow is documented in [docs/private-repo.md](docs/private-repo.md).
+After the private repo is linked, keep doing day-to-day operations from the main `MD4N/` checkout with [scripts/mn.sh](scripts/mn.sh).
 
 This works especially well for app-managed config that is easier to edit in place, such as linked trees under `~/.config`.
 Examples include local shell snippets, window-manager runtime files, and application configs that are usually edited from inside the app itself.

@@ -39,6 +39,7 @@ For Niri, keep machine-only files under `<machine>/home-manager/niri/`:
 
 Use `bash ./new-machine.sh <machine-dir>` to create a new machine directory scaffold.
 Use `bash ./link-md4n.sh` to apply one of the existing machine directories.
+After linking, go back to the main `MD4N/` checkout and use `bash ./scripts/mn.sh` for normal day-to-day operations.
 
 `new-machine.sh` seeds tracked templates and safe shared defaults.
 It does not copy the current machine's private `MD4N/local/` overrides into the new scaffold.

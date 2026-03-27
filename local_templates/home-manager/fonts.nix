@@ -2,23 +2,23 @@
   fonts.fontconfig = {
     enable = true;
     defaultFonts = {
+      # Keep the starter useful without private font installs.
       sansSerif = [
-        "Neue Frutiger World"
+        "Noto Sans"
+        "DejaVu Sans"
+        "Liberation Sans"
         "Noto Sans CJK JP"
         "Noto Sans CJK SC"
-        "FiraCode Nerd Font"
       ];
       serif = [
-        "Palatino Linotype"
-        "Noto Serif JP"
-        "Noto Serif SC"
-        "FiraCode Nerd Font"
+        "Noto Serif"
+        "DejaVu Serif"
+        "Liberation Serif"
       ];
       monospace = [
-        "MonoLisa"
-        "Noto Sans CJK JP"
-        "Noto Sans CJK SC"
-        "FiraCode Nerd Font Mono"
+        "DejaVu Sans Mono"
+        "Liberation Mono"
+        "Noto Sans Mono"
       ];
     };
   };
