@@ -275,23 +275,8 @@ seed_local_tree() {
 
     if [[ -n "$md4n_root" ]]; then
         copy_tree_contents "${md4n_root}/local_templates" "${local_target}"
-
-        copy_path "${md4n_root}/local/README.md" "${local_target}/README.md"
-        copy_path "${md4n_root}/local/flake.nix" "${local_target}/flake.nix"
-        copy_path "${md4n_root}/local/flake.lock" "${local_target}/flake.lock"
         copy_path "${md4n_root}/flake.lock" "${local_target}/flake.lock"
         copy_path "${md4n_root}/local/generated/user.nix" "${local_target}/generated/user.nix"
-        copy_path "${md4n_root}/local/home-manager/default.nix" "${local_target}/home-manager/default.nix"
-        copy_path "${md4n_root}/local/home-manager/extra-modules.nix" "${local_target}/home-manager/extra-modules.nix"
-        copy_path "${md4n_root}/local/home-manager/fonts.nix" "${local_target}/home-manager/fonts.nix"
-        copy_path "${md4n_root}/local/home-manager/packages.nix" "${local_target}/home-manager/packages.nix"
-        copy_path "${md4n_root}/local/home-manager/programs.nix" "${local_target}/home-manager/programs.nix"
-        copy_path "${md4n_root}/local/home-manager/services.nix" "${local_target}/home-manager/services.nix"
-        copy_path "${md4n_root}/local/nixos/default.nix" "${local_target}/nixos/default.nix"
-        copy_path "${md4n_root}/local/nixos/extra-modules.nix" "${local_target}/nixos/extra-modules.nix"
-        copy_path "${md4n_root}/local/nixos/packages.nix" "${local_target}/nixos/packages.nix"
-        copy_path "${md4n_root}/local/nixos/services.nix" "${local_target}/nixos/services.nix"
-        copy_path "${md4n_root}/local/nixos/swap.nix" "${local_target}/nixos/swap.nix"
     fi
 }
 
@@ -309,16 +294,6 @@ seed_private_home_manager_tree() {
 
     if [[ -n "$md4n_root" ]]; then
         seed_path_if_missing "${md4n_root}/home-manager/config/btop" "${hm_target}/btop"
-        seed_path_if_missing "${md4n_root}/home-manager/config/fish/local.env.fish" "${hm_target}/fish/local.env.fish"
-        seed_path_if_missing "${md4n_root}/home-manager/config/fish/local.aliases.fish" "${hm_target}/fish/local.aliases.fish"
-        seed_path_if_missing "${md4n_root}/home-manager/config/fish/local.functions.fish" "${hm_target}/fish/local.functions.fish"
-        seed_path_if_missing "${md4n_root}/home-manager/config/niri/browser.sh" "${hm_target}/niri/browser.sh"
-        seed_path_if_missing "${md4n_root}/home-manager/config/niri/outputs.kdl" "${hm_target}/niri/outputs.kdl"
-        seed_path_if_missing "${md4n_root}/home-manager/config/niri/outputs.local.kdl" "${hm_target}/niri/outputs.kdl"
-        seed_path_if_missing "${md4n_root}/home-manager/config/niri/config.local.kdl" "${hm_target}/niri/config.local.kdl"
-        seed_path_if_missing "${md4n_root}/home-manager/config/custom-fonts/gtk-3.0-settings.ini" "${hm_target}/custom-fonts/gtk-3.0-settings.ini"
-        seed_path_if_missing "${md4n_root}/home-manager/config/custom-fonts/gtk-4.0-settings.ini" "${hm_target}/custom-fonts/gtk-4.0-settings.ini"
-        seed_path_if_missing "${md4n_root}/home-manager/config/custom-fonts/fcitx5-classicui.conf" "${hm_target}/custom-fonts/fcitx5-classicui.conf"
     fi
 
     write_private_home_manager_readme "${hm_target}/README.md"

@@ -32,6 +32,9 @@ Recommended first-time flow:
 4. Run `bash ./new-machine.sh <machine-dir>` inside `MD4N-private`.
 5. Run `bash ./link-md4n.sh --machine <machine-dir>` to seed missing files and switch runtime paths to the private-managed copies.
 
+`new-machine.sh` intentionally seeds from tracked templates and shared defaults only.
+It does not copy your current `MD4N/local/` private overrides such as machine-specific package wiring.
+
 Example:
 
 ```bash
