@@ -143,6 +143,16 @@
       "scripts/prune-backups.sh"
       "scripts/fix-script-permissions.sh"
       "scripts/lib/display-config.sh"
+      "private_templates/MD4N-private/new-machine.sh"
+      "private_templates/MD4N-private/link-md4n.sh"
+    ];
+    helpFiles = [
+      "install.sh"
+      "scripts/bootstrap.sh"
+      "scripts/forge.sh"
+      "scripts/configure-niri-outputs.sh"
+      "private_templates/MD4N-private/new-machine.sh"
+      "private_templates/MD4N-private/link-md4n.sh"
     ];
   in {
     formatter.${defaultSystem} = (mkPkgs defaultSystem).alejandra;
@@ -182,6 +192,120 @@
         ''
           cd ${self}
           shellcheck -S warning ${nixLib.escapeShellArgs shellFiles}
+          touch "$out"
+        '';
+
+      deadnix =
+        (mkPkgs defaultSystem).runCommand "md4n-deadnix"
+        {
+          nativeBuildInputs = [(mkPkgs defaultSystem).deadnix];
+        }
+        ''
+          cd ${self}
+          deadnix --fail ${nixLib.escapeShellArgs nixFiles}
+          touch "$out"
+        '';
+
+      bash-syntax =
+        (mkPkgs defaultSystem).runCommand "md4n-bash-syntax"
+        {
+          nativeBuildInputs = [(mkPkgs defaultSystem).bash];
+        }
+        ''
+          cd ${self}
+          for file in ${nixLib.escapeShellArgs shellFiles}; do
+            bash -n "$file"
+          done
+          touch "$out"
+        '';
+
+      actionlint =
+        (mkPkgs defaultSystem).runCommand "md4n-actionlint"
+        {
+          nativeBuildInputs = with (mkPkgs defaultSystem); [
+            actionlint
+            coreutils
+          ];
+        }
+        ''
+          mkdir -p "$TMPDIR/repo"
+          cp -a ${self}/. "$TMPDIR/repo/"
+          chmod -R u+w "$TMPDIR/repo"
+          mkdir -p "$TMPDIR/repo/.git"
+          cd "$TMPDIR/repo"
+          actionlint
+          touch "$out"
+        '';
+
+      help-smoke =
+        (mkPkgs defaultSystem).runCommand "md4n-help-smoke"
+        {
+          nativeBuildInputs = [(mkPkgs defaultSystem).bash];
+        }
+        ''
+          cd ${self}
+          for file in ${nixLib.escapeShellArgs helpFiles}; do
+            bash "$file" --help >/dev/null
+          done
+          touch "$out"
+        '';
+
+      private-workflow-smoke =
+        (mkPkgs defaultSystem).runCommand "md4n-private-workflow-smoke"
+        {
+          nativeBuildInputs = with (mkPkgs defaultSystem); [
+            bash
+            coreutils
+            findutils
+            gnugrep
+            inetutils
+          ];
+        }
+        ''
+          export HOME="$TMPDIR/home"
+          mkdir -p "$HOME"
+
+          mkdir -p "$TMPDIR/MD4N"
+          cp -a ${self}/. "$TMPDIR/MD4N/"
+          chmod -R u+w "$TMPDIR/MD4N"
+          mkdir -p "$TMPDIR/MD4N/.git"
+          mkdir -p "$TMPDIR/MD4N/local/generated"
+          cat > "$TMPDIR/MD4N/local/generated/user.nix" <<'EOF'
+          {
+            fullname = "Smoke Test";
+            gpuVendor = "amd";
+            locale = "en_US.UTF-8";
+            timezone = "Asia/Tokyo";
+            packageProfile = "full";
+            browser = "firefox";
+          }
+          EOF
+
+          mkdir -p "$TMPDIR/MD4N-private"
+          cp -a "$TMPDIR/MD4N/private_templates/MD4N-private/." "$TMPDIR/MD4N-private/"
+          chmod -R u+w "$TMPDIR/MD4N-private"
+
+          cd "$TMPDIR/MD4N-private"
+          bash ./new-machine.sh smoke --force
+
+          test -f smoke/README.md
+          test -f smoke/local/flake.nix
+          test -f smoke/local/home-manager/default.nix
+          test -f smoke/local/nixos/default.nix
+          test -f smoke/local/generated/user.nix
+          test -f smoke/home-manager/README.md
+          test -f smoke/home-manager/niri/config.local.kdl
+          test -f smoke/home-manager/niri/outputs.kdl
+          test -f smoke/home-manager/custom-fonts/gtk-3.0-settings.ini
+          grep -q 'firefox &' smoke/home-manager/niri/browser.sh
+
+          bash ./link-md4n.sh --md4n-root "$TMPDIR/MD4N" --machine smoke
+
+          test -f "$TMPDIR/MD4N/local/home-manager/default.nix"
+          test -L "$TMPDIR/MD4N/home-manager/config/niri/config.local.kdl"
+          test -L "$TMPDIR/MD4N/home-manager/config/custom-fonts/gtk-3.0-settings.ini"
+          test "$(readlink -f "$TMPDIR/MD4N/home-manager/config/niri/config.local.kdl")" = "$(readlink -f "$TMPDIR/MD4N-private/smoke/home-manager/niri/config.local.kdl")"
+
           touch "$out"
         '';
     };

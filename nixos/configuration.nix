@@ -6,15 +6,10 @@
 # ██║ ╚═╝ ██║██████╔╝     ██║██║ ╚████║
 # ╚═╝     ╚═╝╚═════╝      ╚═╝╚═╝  ╚═══╝
 #
-{
-  config,
-  pkgs,
-  inputs,
-  user,
-  ...
-}: let
+{user, ...}: let
   packageProfile = user.packageProfile or "full";
-  virtualizationEnabled = (user.enableVirtualization or true) && packageProfile != "minimal";
+  virtualizationEnabled =
+    (user.enableVirtualization or true) && packageProfile != "minimal";
 in {
   imports =
     [

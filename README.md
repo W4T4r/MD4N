@@ -87,6 +87,18 @@ The main validation entrypoint remains:
 nix flake check
 ```
 
+The repository checks now cover:
+
+- Nix formatting through `alejandra`
+- Nix hygiene through `deadnix`
+- shell lint through `shellcheck`
+- shell syntax for the script layer and private template scripts
+- GitHub Actions validation through `actionlint`
+- smoke coverage for the documented `--help` entrypoints
+- a private workflow smoke test that scaffolds and links a temporary `MD4N-private` machine profile
+
+The dev shell still exposes `statix` for manual Nix linting when you want style suggestions that are broader than the enforced gate.
+
 If `local/flake.nix` exists, you can validate the machine-local entrypoint with:
 
 ```bash
@@ -125,6 +137,7 @@ For local configuration that you want to maintain yourself over time, the recomm
 The tracked starter for that private repository lives in [private_templates/MD4N-private](private_templates/MD4N-private/README.md).
 The recommended management workflow is documented in [docs/private-repo.md](docs/private-repo.md).
 After the private repo is linked, keep doing day-to-day operations from the main `MD4N/` checkout with [scripts/mn.sh](scripts/mn.sh).
+If you are unsure where a change belongs, use [docs/editing-guide.md](docs/editing-guide.md).
 
 This works especially well for app-managed config that is easier to edit in place, such as linked trees under `~/.config`.
 Examples include local shell snippets, window-manager runtime files, and application configs that are usually edited from inside the app itself.
@@ -140,6 +153,7 @@ Use these documents when you want the detailed explanation for each area:
 - [Home Manager Package Profiles](home-manager/modules/packages/README.md): the role of `minimal` and `full`
 - [Local Templates](local_templates/README.md): tracked starter files and documentation for the ignored local runtime tree
 - [Private Repo Guide](docs/private-repo.md): when to use a separate private repo and how to manage it
+- [Editing Guide](docs/editing-guide.md): where shared, local, generated, and private changes belong
 - [Private Repo Template](private_templates/README.md): tracked starter content for separate private repositories
 - [Shared Config Tree](home-manager/config/README.md): what belongs under the repository-managed config tree
 - [Fcitx5](home-manager/config/fcitx5/README.md): Japanese and Chinese input layout and shared profile
@@ -156,6 +170,7 @@ Use these documents when you want the detailed explanation for each area:
 - [flake.nix](flake.nix): shared base flake, exported modules, and builder functions
 - [local_templates/README.md](local_templates/README.md): local runtime layout, starter files, and ignored paths
 - [private_templates/MD4N-private/README.md](private_templates/MD4N-private/README.md): starter for a separate `MD4N-private` repository
+- [docs/editing-guide.md](docs/editing-guide.md): decision guide for shared vs local vs private edits
 - [user.nix](user.nix): repository-safe shared defaults
 - [lib/user.nix](lib/user.nix): merge and normalization layer for user settings
 - [nixos/configuration.nix](nixos/configuration.nix): stable NixOS entrypoint

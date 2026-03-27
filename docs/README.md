@@ -7,5 +7,6 @@ The root [README.md](../README.md) should stay as the main entrypoint, while thi
 
 Current guides include:
 
+- [editing-guide.md](editing-guide.md)
 - [troubleshooting.md](troubleshooting.md)
 - [private-repo.md](private-repo.md)

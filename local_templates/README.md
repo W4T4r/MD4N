@@ -43,3 +43,4 @@ Typical local-only uses:
 For hand-maintained local overrides, prefer a separate private repository and link the runtime path to it.
 That keeps app-managed edits persistent without pushing them into the shared MD4N tree.
 A tracked starter lives in [`../private_templates/MD4N-private`](../private_templates/MD4N-private/README.md), and the management workflow is documented in [`../docs/private-repo.md`](../docs/private-repo.md).
+If you are unsure whether a change belongs in the shared tree, the ignored local tree, or the private repo, use [`../docs/editing-guide.md`](../docs/editing-guide.md).
